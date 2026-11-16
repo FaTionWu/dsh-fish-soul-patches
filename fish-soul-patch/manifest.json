@@ -100,11 +100,13 @@
                       "routes-patches.txt",
                       "client-continuity.txt",
                       "client-models-xtopics.txt",
+                      "patches.json",
                       "patches.json"
                   ],
     "notes":  [
                   "预检在临时沙箱副本里完整应用一遍；锚点漂移时不改真实文件",
                   "应用前备份所有涉及文件（存在性 + SHA-256），校验失败自动回滚",
+                  "崩溃后留下 pending 事务：下次启动先验证备份，再全量恢复并校验 hash",
                   "X 话题不调用 X API、不登录 X，走已配好的联网搜索",
                   "重装插件会清掉补丁，需要重跑脚本；数据与配置不受影响"
               ]

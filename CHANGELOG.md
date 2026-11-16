@@ -1,3 +1,11 @@
+## 2026-11-17 — crash recovery + security tests + CI
+
+- Fixed false-positive in security source regex (198.18/15 vs 198.51.100)
+- Added reverse fixtures for security source rules
+- Added pending-transaction recovery: validate backup, restore, verify hashes, manual instructions
+- Added SIGKILL mid-apply recovery test and missing-backup test
+- Added real localhost HTTP + injected DNS/redirect/size security behavior tests
+- Added GitHub Actions matrix for 0.16.6 / 0.18.2 / 0.18.4
 ## 2026-11-17 — safety/test hardening
 
 - Orchestrator: sandbox preflight, backup, apply, verify, automatic rollback

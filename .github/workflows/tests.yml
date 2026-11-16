@@ -1,0 +1,49 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  matrix:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['0.16.6', '0.18.2', '0.18.4']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax check
+        run: |
+          node --check patch-fish-soul.mjs
+          node --check apply-core.mjs
+          node --check tests/run-matrix.mjs
+          node --check tests/security-source.test.mjs
+          node --check tests/security-download.test.mjs
+          node --check tests/crash-recovery.test.mjs
+
+      - name: Security source rules (fixtures)
+        run: node tests/security-source.test.mjs
+
+      - name: Patch matrix (original / patched / drift / rollback)
+        run: node tests/run-matrix.mjs ${{ matrix.version }}
+
+      - name: Crash recovery (SIGKILL + missing backup)
+        env:
+          FISH_SOUL_VERSION: ${{ matrix.version }}
+        run: node tests/crash-recovery.test.mjs

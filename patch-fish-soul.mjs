@@ -27,6 +27,7 @@ import path from 'node:path'
 import crypto from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { checkSecuritySource as checkSecuritySourceText } from './tools/security-source.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const core = path.join(here, 'apply-core.mjs')
@@ -164,11 +165,17 @@ function nextBackupId() {
   return id
 }
 
+function writeJson(file, obj) {
+  const tmp = `${file}.tmp-${process.pid}`
+  fs.writeFileSync(tmp, JSON.stringify(obj, null, 2) + '\n')
+  fs.renameSync(tmp, file)
+}
+
 function backup(meta) {
   const id = nextBackupId()
   const dir = backupDirFor(id)
   const files = [...new Set(meta.flatMap((p) => p.files))].sort()
-  const manifest = { id, version: version(), createdAt: new Date().toISOString(), status: 'pending', patches: meta.map((p) => p.id), files: [] }
+  const manifest = { id, version: version(), profile: profileDir, plugin: pluginDir, createdAt: new Date().toISOString(), status: 'pending', patches: meta.map((p) => p.id), files: [] }
   ensureDir(path.join(dir, 'files'))
   for (const rel of files) {
     const abs = path.join(pluginDir, rel)
@@ -181,31 +188,103 @@ function backup(meta) {
     }
     manifest.files.push(entry)
   }
-  fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n')
+  writeJson(path.join(dir, 'manifest.json'), manifest)
   good(`已备份 ${manifest.files.length} 个文件 → ${dir}`)
   return id
+}
+
+function validateBackup(dir, manifest) {
+  const problems = []
+  for (const f of manifest.files ?? []) {
+    if (f.existed !== true) continue
+    const src = path.join(dir, 'files', f.path)
+    if (!exists(src)) { problems.push(`缺备份文件：${f.path}`); continue }
+    if (f.sha256 !== null && sha256(fs.readFileSync(src)) !== f.sha256) problems.push(`备份哈希不符：${f.path}`)
+  }
+  return problems
+}
+
+function recoveryInstructions(dir, manifest, problems = []) {
+  out('')
+  out('需要人工恢复。按下面做，不要继续应用补丁：')
+  out(`  备份目录：${dir}`)
+  out(`  插件目录：${pluginDir}`)
+  for (const problem of problems) out(`  - ${problem}`)
+  out('  1) 对 manifest.json 里每个 existed=true 的文件：')
+  out('     把 <备份目录>/files/<path> 复制回 <插件目录>/<path>')
+  out('  2) 对每个 existed=false 的文件：删除 <插件目录>/<path>')
+  out('  3) 恢复后按 manifest.json 里的 sha256 校验；全对再重新运行 --check')
+  out('')
+}
+
+function restoreFromManifest(dir, manifest) {
+  const problems = validateBackup(dir, manifest)
+  if (problems.length > 0) {
+    manifest.status = 'recoveryFailed'
+    manifest.recoveryFailedAt = new Date().toISOString()
+    manifest.recoveryProblems = problems
+    writeJson(path.join(dir, 'manifest.json'), manifest)
+    bad(`备份不完整，未做任何恢复（${manifest.id}）`)
+    recoveryInstructions(dir, manifest, problems)
+    return false
+  }
+  manifest.status = 'recovering'
+  manifest.recoveringAt = new Date().toISOString()
+  writeJson(path.join(dir, 'manifest.json'), manifest)
+  try {
+    for (const f of manifest.files ?? []) {
+      const dst = path.join(pluginDir, f.path)
+      if (f.existed === true) copyFile(path.join(dir, 'files', f.path), dst)
+      else rmFile(dst)
+    }
+    const bads = []
+    for (const f of manifest.files ?? []) {
+      const dst = path.join(pluginDir, f.path)
+      if (f.existed === true) {
+        if (!exists(dst) || (f.sha256 !== null && sha256(fs.readFileSync(dst)) !== f.sha256)) bads.push(`恢复后哈希不一致：${f.path}`)
+      } else if (exists(dst)) bads.push(`应删除但仍存在：${f.path}`)
+    }
+    if (bads.length > 0) throw new Error(bads.join('；'))
+    manifest.status = 'rolledBack'
+    manifest.rolledBackAt = new Date().toISOString()
+    writeJson(path.join(dir, 'manifest.json'), manifest)
+    good(`已回滚备份 ${manifest.id}`)
+    return true
+  } catch (e) {
+    manifest.status = 'recoveryFailed'
+    manifest.recoveryFailedAt = new Date().toISOString()
+    manifest.recoveryError = String(e?.message ?? e)
+    writeJson(path.join(dir, 'manifest.json'), manifest)
+    bad(`恢复失败：${manifest.recoveryError}`)
+    recoveryInstructions(dir, manifest, [manifest.recoveryError])
+    return false
+  }
 }
 
 function restore(id) {
   const dir = backupDirFor(id)
   const manifest = readJson(path.join(dir, 'manifest.json'), null)
   if (manifest === null) { bad(`备份不存在或损坏：${id}`); return false }
-  for (const f of manifest.files ?? []) {
-    const dst = path.join(pluginDir, f.path)
-    if (f.existed === true) {
-      const src = path.join(dir, 'files', f.path)
-      if (!exists(src)) { bad(`备份缺文件：${src}`); return false }
-      copyFile(src, dst)
-      if (f.sha256 !== null && sha256(fs.readFileSync(dst)) !== f.sha256) bad(`恢复后哈希不一致：${f.path}`)
-    } else {
-      rmFile(dst)
-    }
+  if (manifest.profile !== undefined && manifest.profile !== profileDir) { bad(`这个备份属于另一个 profile：${manifest.profile}`); return false }
+  return restoreFromManifest(dir, manifest)
+}
+
+/** 启动时恢复所有 pending / recovering 事务（进程被杀、断电后留下的）。 */
+function recoverPending() {
+  if (!exists(backupRoot)) return true
+  let ok = true
+  const dirs = fs.readdirSync(backupRoot).filter((n) => exists(path.join(backupRoot, n, 'manifest.json'))).sort()
+  for (const id of dirs) {
+    const dir = backupDirFor(id)
+    const manifest = readJson(path.join(dir, 'manifest.json'), null)
+    if (manifest === null) continue
+    if (manifest.profile !== undefined && manifest.profile !== profileDir) { warn(`跳过其他 profile 的事务 ${manifest.id}`); continue }
+    if (manifest.profile === undefined) { warn(`跳过没有 profile 标记的旧事务 ${manifest.id}`); continue }
+    if (manifest.status !== 'pending' && manifest.status !== 'recovering') continue
+    out(`发现未完成事务 ${manifest.id}（${manifest.status}），开始恢复…`)
+    if (!restoreFromManifest(dir, manifest)) ok = false
   }
-  manifest.status = 'rolledBack'
-  manifest.rolledBackAt = new Date().toISOString()
-  fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n')
-  good(`已回滚备份 ${id}`)
-  return !failed
+  return ok
 }
 
 function listBackups() {
@@ -278,24 +357,13 @@ async function checkModules() {
 function checkSecuritySource() {
   const file = path.join(libDir, 'safe-download.js')
   if (!exists(file)) { bad('safe-download.js 不存在'); return }
-  const s = fs.readFileSync(file, 'utf8')
-  const checks = [
-    ['scheme 白名单', /\[['"]http:['"],\s*['"]https:['"]\]/],
-    ['userinfo 拒绝', /url\.username/],
-    ['端口白名单', /\['80',\s*'443'\]/],
-    ['DNS 全量校验', /lookup\(host/],
-    ['重定向上限', /maxRedirects/],
-    ['重定向重新校验', /location/],
-    ['大小上限', /maxBytes/],
-    ['超时', /timeoutMs/],
-    ['Content-Length 检查', /content-length/],
-    ['198.18/15 放行', /198\s*&&\s*b\s*===\s*51/],
-    ['198.51.100 仍拒绝', /198\s*&&\s*b\s*===\s*51\s*&&\s*c\s*===\s*100/]
-  ]
-  for (const [name, re] of checks) {
-    if (re.test(s)) good(`下载器：${name}`)
-    else bad(`下载器：缺少 ${name}`)
+  const { ok, checks } = checkSecuritySourceText(fs.readFileSync(file, 'utf8'))
+  for (const c of checks) {
+    if (c.ok) good(`下载器：${c.name}${c.detail ? `（${c.detail}）` : ''}`)
+    else bad(`下载器：${c.name}${c.detail ? `（${c.detail}）` : ''}`)
   }
+  // 反向断言：不能只命中 198.51.100 就以为 198.18/15 已放行；由 tools 里的 fake-IP 检查负责
+  if (ok !== true) failed = true
 }
 
 async function checkDbAndConfig() {
@@ -393,7 +461,7 @@ function apply(meta) {
     m.status = 'applied'
     m.appliedAt = new Date().toISOString()
     m.after = Object.fromEntries((m.files ?? []).map((f) => [f.path, exists(path.join(pluginDir, f.path)) ? sha256(fs.readFileSync(path.join(pluginDir, f.path))) : null]))
-    fs.writeFileSync(manifestFile, JSON.stringify(m, null, 2) + '\n')
+    writeJson(manifestFile, m)
     out(`\n备份 ID：${backupId}`)
     out(`回滚：node ./patch-fish-soul.mjs --rollback ${backupId}`)
   }
@@ -403,8 +471,10 @@ function apply(meta) {
 async function main() {
   if (has('--help') || has('-h')) {
     out(`用法：
-  node ./patch-fish-soul.mjs [--check|--verify|--health|--rollback [id]|--list]
+  node ./patch-fish-soul.mjs [--check|--verify|--health|--rollback [id]|--list|--recover]
                               [--url URL] [--cookie COOKIE] [--no-backup]
+  node ./patch-fish-soul.mjs --backup-only   # 只建恢复点（测试/手工排查用）
+
 环境：DSH_PROFILE_DIR、FS_PATCH_BACKUP_DIR、DSH_WEB_URL、DSH_COOKIE
 `)
     return
@@ -418,6 +488,15 @@ async function main() {
   }
   const meta = loadMeta()
   if (!checkMeta(meta)) { process.exitCode = 1; return }
+  // 进程被杀 / 断电后留下的 pending / recovering 事务：先恢复，再继续任何检查/应用。
+  if (!recoverPending()) { process.exitCode = 1; return }
+  if (has('--recover')) { out('未完成事务已处理。'); process.exitCode = failed ? 1 : 0; return }
+  if (has('--backup-only')) {
+    const id = backup(meta)
+    out(`恢复点 ID：${id}（下次运行会自动检测并恢复这个 pending 事务）`)
+    process.exitCode = 0
+    return
+  }
   if (has('--check')) {
     const ok = sandboxCheck(meta)
     process.exitCode = ok ? 0 : 1

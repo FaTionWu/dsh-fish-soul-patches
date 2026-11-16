@@ -28,3 +28,8 @@ douyin-browser/
 Thumbs.db
 .idea/
 .vscode/
+
+# npm pack test artifacts
+*.tgz
+*.tar.gz
+

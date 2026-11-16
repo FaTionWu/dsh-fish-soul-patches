@@ -1,5 +1,7 @@
 # dsh-fish-soul-patches
 
+![tests](https://github.com/FaTionWu/dsh-fish-soul-patches/actions/workflows/tests.yml/badge.svg)
+
 **Unofficial experience patches for [dsh-fish-soul](https://github.com/Britneycode/dsh-fish-soul) (MIT).**
 **Not affiliated with or endorsed by the upstream author.** Tested against `dsh-fish-soul@0.16.6`, `0.18.2`, `0.18.4`; anchors may break on newer versions. See [TESTING.md](TESTING.md) and [SECURITY.md](SECURITY.md).
 
@@ -66,6 +68,7 @@ node ./patch-fish-soul.mjs --check     # 只在临时沙箱副本里完整跑一
 node ./patch-fish-soul.mjs             # 预检 → 备份 → 应用 → 校验（失败自动回滚）
 node ./patch-fish-soul.mjs --verify    # 文件/模块/安全/DB/配置校验
 node ./patch-fish-soul.mjs --health    # 运行时健康检查（可选 HTTP 路由探测）
+node ./patch-fish-soul.mjs --recover   # 只处理崩溃后留下的 pending 事务
 node ./patch-fish-soul.mjs --rollback  # 回滚最近一次
 node ./patch-fish-soul.mjs --list      # 列出备份
 ```

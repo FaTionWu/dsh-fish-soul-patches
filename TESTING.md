@@ -71,3 +71,24 @@ node ./patch-fish-soul.mjs --health --url http://127.0.0.1:51374 --cookie "dsh_s
 - 只跑 `--check` 和 `--verify` 需要插件已安装；矩阵测试需要 npm 网络。
 - 不要把真实 `~/.dsh` 配置、数据库、Tavily key 放进 CI；矩阵用临时 profile 和临时备份目录。
 - 0.18.x 结构变动时，先看 `--check` 是否通过；不通过就不要发布新版本。
+
+## 崩溃恢复与安全行为测试
+
+```powershell
+node tests/security-source.test.mjs     # 源码规则 + 反向用例（198.18/15 vs 198.51.100）
+node tests/security-download.test.mjs   # 真实本地 HTTP + DNS/重定向/大小/fake-IP 注入用例
+node tests/crash-recovery.test.mjs      # SIGKILL 中途写文件 → 下次启动恢复；备份缺失时拒绝部分恢复
+```
+
+`run-matrix.mjs` 会在每个版本应用完成后自动跑前两个测试；`crash-recovery` 在 CI 里按版本单独跑。
+
+## GitHub Actions
+
+`.github/workflows/tests.yml` 在 `windows-latest` 上按 0.16.6 / 0.18.2 / 0.18.4 三个版本并行跑：
+
+1. 语法检查；
+2. 源码安全规则测试；
+3. 完整补丁矩阵（原始 / 已打补丁 / 锚点漂移 / 回滚）；
+4. 崩溃恢复测试（SIGKILL + 备份缺失）。
+
+push / PR / 手动触发都会跑；见仓库 Actions 页。

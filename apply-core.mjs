@@ -15,6 +15,19 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+// 测试钩子：写入 N 个文件后 SIGKILL 自己，用来验证 wrapper 的崩溃恢复。
+const crashAfterWrites = Number(process.env.FS_PATCH_CRASH_AFTER || 0)
+if (crashAfterWrites > 0) {
+  const originalWrite = fs.writeFileSync.bind(fs)
+  let writes = 0
+  fs.writeFileSync = (...args) => {
+    const r = originalWrite(...args)
+    writes += 1
+    if (writes >= crashAfterWrites) process.kill(process.pid, 'SIGKILL')
+    return r
+  }
+}
+
 const here = path.dirname(fileURLToPath(import.meta.url))
 const patchDir = path.join(here, 'fish-soul-patch')
 const profileDir = process.env.DSH_PROFILE_DIR || path.join(os.homedir(), '.dsh', 'profiles', 'desktop')
