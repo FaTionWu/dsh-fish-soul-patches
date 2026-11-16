@@ -10,6 +10,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import http from 'node:http'
+import dns from 'node:dns/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -31,6 +32,19 @@ const cases = [
 	['224.0.0.1', false], ['::1', false]
 ]
 for (const [ip, want] of cases) assert.equal(publicIPv4(ip), want, `publicIPv4(${ip})`)
+
+// 真实 DNS：localhost 必须解析到非公网地址；公网域名（如果网络可用）应解析到公网 IPv4
+{
+	const local = await dns.lookup('localhost', { all: true })
+	assert.ok(local.length > 0, 'localhost should resolve')
+	for (const a of local.filter((x) => x.family === 4)) assert.equal(publicIPv4(a.address), false, `localhost -> ${a.address}`)
+	try {
+		const pub = await dns.lookup('example.com', { all: true })
+		assert.ok(pub.some((x) => x.family === 4 && publicIPv4(x.address)), 'example.com should have a public IPv4')
+	} catch {
+		console.log('SKIP  real public DNS lookup (network unavailable)')
+	}
+}
 
 // ── 真实 HTTP：127.0.0.1 必须被拒绝，且不产生请求 ──────────────
 const server = http.createServer((req, res) => { res.end('secret') })
