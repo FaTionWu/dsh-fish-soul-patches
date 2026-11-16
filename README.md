@@ -1,7 +1,7 @@
 # dsh-fish-soul-patches
 
 **Unofficial experience patches for [dsh-fish-soul](https://github.com/Britneycode/dsh-fish-soul) (MIT).**
-**Not affiliated with or endorsed by the upstream author.** Tested against `dsh-fish-soul@0.18.2`; anchors may break on newer versions.
+**Not affiliated with or endorsed by the upstream author.** Tested against `dsh-fish-soul@0.16.6`, `0.18.2`, `0.18.4`; anchors may break on newer versions. See [TESTING.md](TESTING.md) and [SECURITY.md](SECURITY.md).
 
 [中文说明](#中文说明) · [License](#license--attribution)
 
@@ -56,6 +56,39 @@ Then **restart DSH** and refresh the settings page (UI chunks are cached by the 
 
 Re-running the script is safe (idempotent). Reinstalling/upgrading the plugin wipes the patched files,
 so run it again afterwards.
+
+## Safety: preflight, backup, apply, rollback
+
+The entry script is an orchestrator, not a blind patcher:
+
+```powershell
+node ./patch-fish-soul.mjs --check     # 只在临时沙箱副本里完整跑一遍，不改真实文件
+node ./patch-fish-soul.mjs             # 预检 → 备份 → 应用 → 校验（失败自动回滚）
+node ./patch-fish-soul.mjs --verify    # 文件/模块/安全/DB/配置校验
+node ./patch-fish-soul.mjs --health    # 运行时健康检查（可选 HTTP 路由探测）
+node ./patch-fish-soul.mjs --rollback  # 回滚最近一次
+node ./patch-fish-soul.mjs --list      # 列出备份
+```
+
+- 预检在临时 profile 副本里完整应用一遍；锚点漂移时直接失败，真实文件不动。
+- 应用前把涉及文件备份到 `~/.dsh/fish-soul-patches/backups/<id>/`（记录存在性与 SHA-256）。
+- 应用后校验失败会自动回滚；成功会打印备份 ID 和回滚命令。
+- 备份可用 `FS_PATCH_BACKUP_DIR` 改位置；`--apply --no-backup` 只推荐在已确认的幂等重跑里用。
+- 回滚会恢复所有文件并删除补丁新增的 `lib/x-topics.js`。
+
+## Patch dependencies
+
+| 补丁 | 依赖 | 冲突 | 撤销 |
+|------|------|------|------|
+| persona-continuity / first-delay / reasoning-fallback / closing-marks | — | — | 从备份恢复对应文件 |
+| followup-chain | — | — | 从备份恢复 `gateway.js` |
+| auto-continue | followup-chain | — | 从备份恢复 `gateway.js` |
+| qq-text-rules | — | — | 从备份恢复 `index.js` |
+| safe-download-fake-ip | — | — | 从备份恢复 `safe-download.js` |
+| x-topics | qq-text-rules | — | 恢复 `db.js`/`index.js`/`websearch.js`，删除 `x-topics.js` |
+| settings-ui | x-topics, followup-chain | — | 恢复 `client.js`/`client.models.js`/`routes.js`/`config-schema.js` |
+
+元数据在 `fish-soul-patch/patches.json`（含适用版本、标记、回滚方式）；脚本会检查依赖/冲突和版本范围。
 
 ## Configuration
 

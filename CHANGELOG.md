@@ -1,4 +1,13 @@
-﻿# Changelog
+## 2026-11-17 — safety/test hardening
+
+- Orchestrator: sandbox preflight, backup, apply, verify, automatic rollback
+- `--check / --verify / --health / --rollback / --list` commands
+- Patch metadata with dependencies, conflicts, applicable versions, rollback
+- Test matrix: original / patched / anchor-drift, plus rollback and idempotence
+- Security audit: downloader URL/redirect/fake-IP invariants and boundary tests
+- Runtime health: module load, DB table, config, optional `/patches` HTTP probe
+- Tested on 0.16.6, 0.18.2, 0.18.4
+# Changelog
 
 ## 2026-11-17 — initial public draft
 
