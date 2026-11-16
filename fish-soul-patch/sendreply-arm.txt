@@ -1,0 +1,17 @@
+        // 刚发出去的这条如果是「没回音追问」：追问（不是收尾）→ 挂二次；二次本身不再挂。
+        if (st?.proactive === true && row.channel_id.startsWith('private:')) {
+            const meta = this.followupSends?.get(row.channel_id);
+            if (meta !== undefined) {
+                this.followupSends.delete(row.channel_id);
+                if (closing !== true && meta.stage === 1) this.armSecondFollowUp(row);
+            }
+        }
+        // 私聊：这一轮回完了、对方还没再开口 → 挂一个「没回音」计时器；
+        // 主动开口（含追问本身）那一轮不再挂，免得对方一直不回就自己连环追。
+        if (allOk && queuedCount === 0 && closing !== true && st?.proactive !== true && row.channel_id.startsWith('private:')) {
+            this.armFollowUp(row);
+        }
+        // 没问对方、也没收尾的平铺回复：小概率几秒后自己接一句（autoContinue 控频率）
+        if (allOk && queuedCount === 0 && st?.proactive !== true && row.channel_id.startsWith('private:') && paragraphs.length > 0) {
+            this.maybeAutoContinue(row, paragraphs.join('\n'), st);
+        }

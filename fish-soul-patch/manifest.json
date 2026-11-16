@@ -1,0 +1,31 @@
+﻿{
+  "name": "dsh-fish-soul local patch kit",
+  "testedVersion": "0.18.2",
+  "updatedAt": "2026-11-17",
+  "entry": "patch-fish-soul.mjs",
+  "run": "node ./patch-fish-soul.mjs",
+  "restartAfter": true,
+  "patches": [
+    { "id": "persona-continuity", "title": "连续对话提示词", "files": ["lib/persona.js"] },
+    { "id": "first-delay", "title": "首条回复延迟", "files": ["lib/gateway.js"] },
+    { "id": "followup-chain", "title": "没回音追问 + 二次追问", "files": ["lib/gateway.js"], "config": "followup" },
+    { "id": "auto-continue", "title": "自动接话", "files": ["lib/gateway.js"], "config": "followup.autoContinue" },
+    { "id": "reasoning-fallback", "title": "思考兜底", "files": ["lib/gateway.js"] },
+    { "id": "closing-marks", "title": "收尾标记剥离/识别", "files": ["lib/gateway.js"] },
+    { "id": "qq-text-rules", "title": "正文/接着说规则", "files": ["lib/index.js"] },
+    { "id": "fake-ip-download", "title": "safeDownload 放行 fake-IP", "files": ["lib/safe-download.js"] },
+    { "id": "x-topics", "title": "X 话题（X + 权威新闻，预算节流）", "files": ["lib/x-topics.js", "lib/db.js", "lib/index.js", "lib/websearch.js"], "config": "xTopics" },
+    { "id": "settings-ui", "title": "设置页 UI（连续对话 + X 话题）", "files": ["lib/client.js", "lib/client.models.js", "lib/routes.js", "lib/config-schema.js"], "config": "followup, xTopics" }
+  ],
+  "dataFiles": [
+    "followup-methods.txt", "sendreply-arm.txt", "x-topics.js", "xtopics-db.txt", "xtopics-schema.txt",
+    "xtopics-runwebsearch.txt", "xtopics-start-extra.txt", "xtopics-context.txt",
+    "followup-schema.txt", "routes-patches.txt", "client-continuity.txt", "client-models-xtopics.txt"
+  ],
+  "notes": [
+    "锚点式补丁：上游改结构时脚本会报 [!!]，不要硬覆盖",
+    "X 话题不调用 X API、不登录 X，走已配好的联网搜索",
+    "重装插件会清掉补丁，需要重跑脚本；数据与配置不受影响"
+  ]
+}
+

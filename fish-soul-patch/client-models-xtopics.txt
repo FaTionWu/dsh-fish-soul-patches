@@ -1,0 +1,65 @@
+﻿		/** X 话题：每天从 X 帖子 / 权威新闻里攒几条，给聊天当话题（不碰 X API） */
+		function XTopicsPane({ api, notify, ui }) {
+			const { h, Group, Row, Switch, Num, Muted, Input, Area, Button } = ui;
+			const [data, load] = useLoad(api, "/patches");
+			const [form, setForm] = react.useState(null);
+			react.useEffect(() => {
+				if (data && form === null) {
+					const x = data.xTopics ?? {};
+					const sources = x.sources ?? ["x", "news"];
+					setForm({
+						enabled: x.enabled === true, xOn: sources.includes("x"), newsOn: sources.includes("news"),
+						runsPerDay: x.runsPerDay ?? 3, newsPerRun: x.newsPerRun ?? 2, xPerRun: x.xPerRun ?? 1,
+						itemsPerDay: x.itemsPerDay ?? 5, maxAgeHours: x.maxAgeHours ?? 48, maxXAgeHours: x.maxXAgeHours ?? 168,
+						monthlySearchCap: x.monthlySearchCap ?? 280, dailySearchCap: x.dailySearchCap ?? 10,
+						slots: (x.slots ?? [12, 18, 21]).join(","), authorityOnly: x.authorityOnly !== false,
+						queries: (x.queries ?? []).join("\n"), xQueries: (x.xQueries ?? []).join("\n")
+					});
+				}
+			}, [data, form]);
+			if (!data || data.error || !form) return null;
+			const st = data.xTopicsStatus ?? {};
+			const patch = (p) => setForm((f) => ({ ...f, ...p }));
+			async function save(p = {}) {
+				const next = { ...form, ...p };
+				setForm(next);
+				const sources = [next.xOn ? "x" : "", next.newsOn ? "news" : ""].filter(Boolean);
+				const { xOn: _xOn, newsOn: _newsOn, queries: _q, xQueries: _xq, slots: _slots, ...rest } = next;
+				const r = await api("POST", "/patches/config", { xTopics: {
+					...rest, sources,
+					runsPerDay: Number(next.runsPerDay), newsPerRun: Number(next.newsPerRun), xPerRun: Number(next.xPerRun),
+					itemsPerDay: Number(next.itemsPerDay), maxAgeHours: Number(next.maxAgeHours), maxXAgeHours: Number(next.maxXAgeHours),
+					monthlySearchCap: Number(next.monthlySearchCap), dailySearchCap: Number(next.dailySearchCap),
+					slots: next.slots.split(",").map(Number).filter(Number.isFinite),
+					queries: next.queries.split("\n").map((s) => s.trim()).filter(Boolean),
+					xQueries: next.xQueries.split("\n").map((s) => s.trim()).filter(Boolean),
+					authorityOnly: next.authorityOnly === true
+				} });
+				if (r?.ok) load(); else notify(r?.error ?? "保存失败");
+			}
+			async function run() {
+				const r = await api("POST", "/x-topics/run", {});
+				if (r?.ok) notify(`跑完：存了 ${r.stored ?? 0} 条`); else notify(r?.error ?? r?.why ?? "没跑成");
+				load();
+			}
+			const num = (k, label, min, max, step = 1) => Num({ min, max, step, value: form[k], "aria-label": label, onChange: (e) => patch({ [k]: e.target.value }), onBlur: () => save({ [k]: Number(form[k]) }) });
+			return h(react.Fragment, null,
+				Group({ title: "X 话题（补丁）", aside: st.enabled ? Muted(`今天 ${st.todayItems ?? 0} 条 · 本月搜索 ${st.monthSearches ?? 0}/${form.monthlySearchCap}`) : null },
+					Row({ title: "每天攒话题", desc: "不碰 X API；走这里配好的联网搜索（X 帖子 + Tavily news）" }, h(Switch, { label: "每天攒话题", checked: form.enabled, onChange: (v) => save({ enabled: v }) })),
+					form.enabled ? Row({ title: "来源" }, h(Switch, { label: "X 帖子", checked: form.xOn, onChange: (v) => save({ xOn: v }) }), Muted("X 权威账号"),
+						h(Switch, { label: "权威新闻", checked: form.newsOn, onChange: (v) => save({ newsOn: v }) }), Muted("Tavily news")) : null,
+					form.enabled ? Row({ title: "每天轮数" }, num("runsPerDay", "每天轮数", 1, 6), Muted("轮")) : null,
+					form.enabled ? Row({ title: "每轮搜索" }, Muted("新闻"), num("newsPerRun", "每轮新闻", 0, 4), Muted("条 · X"), num("xPerRun", "每轮X", 0, 3), Muted("条")) : null,
+					form.enabled ? Row({ title: "每天最多" }, num("itemsPerDay", "每天最多", 1, 10), Muted("条")) : null,
+					form.enabled ? Row({ title: "时效（小时）" }, Muted("新闻"), num("maxAgeHours", "新闻时效", 1, 168), Muted("· X"), num("maxXAgeHours", "X时效", 1, 720)) : null,
+					form.enabled ? Row({ title: "搜索预算" }, Muted("每月"), num("monthlySearchCap", "每月搜索", 1, 1000), Muted("· 每天"), num("dailySearchCap", "每天搜索", 1, 100)) : null,
+					form.enabled ? Row({ title: "时段" }, Input({ value: form.slots, placeholder: "12,18,21", "aria-label": "时段", onChange: (e) => patch({ slots: e.target.value }), onBlur: () => save() }), Muted("点")) : null,
+					form.enabled ? Row({ title: "只留权威来源" }, h(Switch, { label: "只留权威来源", checked: form.authorityOnly, onChange: (v) => save({ authorityOnly: v }) })) : null,
+					form.enabled ? Row({ title: "现在跑一轮", meta: st.lastError ? `上次失败：${st.lastError}` : undefined }, Button({ onClick: run }, "跑一轮")) : null,
+					form.enabled && (st.recent ?? []).length > 0 ? h("div", { className: "fs-list" }, st.recent.slice(0, 3).map((r) => h("div", { className: "fs-item", key: r.url },
+						h("span", { className: "fs-item-main", title: r.url }, r.title), h("span", { className: "fs-item-meta" }, r.author || r.site)))) : null),
+				form.enabled ? Group({ title: "自定义查询（每行一个，留空用默认）" },
+					Row({ title: "新闻查询", stack: true }, Area({ value: form.queries, rows: 4, "aria-label": "新闻查询", onChange: (e) => patch({ queries: e.target.value }), onBlur: () => save() })),
+					Row({ title: "X 查询", stack: true }, Area({ value: form.xQueries, rows: 3, "aria-label": "X 查询", onChange: (e) => patch({ xQueries: e.target.value }), onBlur: () => save() }))) : null);
+		}
+

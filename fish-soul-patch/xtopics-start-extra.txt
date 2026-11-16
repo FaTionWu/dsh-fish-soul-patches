@@ -1,0 +1,2 @@
+﻿	if (xTopics.cfg().enabled) xTopics.start();
+	ctx.effect(() => () => xTopics.stop(), 'dsh-fish-soul: x topics');

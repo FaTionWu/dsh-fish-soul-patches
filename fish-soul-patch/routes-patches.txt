@@ -1,0 +1,39 @@
+﻿				// ── 补丁设置：连续对话 / X 话题 ──
+				if (method === 'GET' && path === '/patches') {
+					return send(200, {
+						ok: true,
+						followup: getConfig().followup ?? {},
+						xTopics: getConfig().xTopics ?? {},
+						xTopicsStatus: xTopics?.status?.() ?? null
+					});
+				}
+				if (method === 'POST' && path === '/patches/config') {
+					if (!sameOrigin(req)) return send(403, { ok: false, error: 'forbidden' });
+					const body = JSON.parse(await readBody(req, logger) || '{}');
+					const patch = {};
+					if (body.followup && typeof body.followup === 'object') {
+						const cur = getConfig().followup ?? {};
+						const f = { ...cur, ...body.followup };
+						f.autoContinue = { ...(cur.autoContinue ?? {}), ...(body.followup.autoContinue ?? {}) };
+						f.minMinutes = Math.min(180, Math.max(1, Math.floor(Number(f.minMinutes ?? cur.minMinutes ?? 3)) || 3));
+						f.maxMinutes = Math.min(180, Math.max(f.minMinutes, Math.floor(Number(f.maxMinutes ?? cur.maxMinutes ?? 9)) || 9));
+						f.secondMinutes = Math.min(60, Math.max(1, Math.floor(Number(f.secondMinutes ?? cur.secondMinutes ?? 4)) || 4));
+						f.secondChance = Math.min(1, Math.max(0, Number(f.secondChance ?? cur.secondChance ?? 0.3)));
+						f.autoContinue.chance = Math.min(1, Math.max(0, Number(f.autoContinue.chance ?? 0.45)));
+						f.autoContinue.cooldownSeconds = Math.min(3600, Math.max(10, Math.floor(Number(f.autoContinue.cooldownSeconds ?? 60)) || 60));
+						patch.followup = f;
+					}
+					if (body.xTopics && typeof body.xTopics === 'object') {
+						const cur = getConfig().xTopics ?? {};
+						patch.xTopics = { ...cur, ...body.xTopics };
+					}
+					if (!patch.followup && !patch.xTopics) return send(200, { ok: false, error: '没有要保存的' });
+					saveConfig(patch);
+					return send(200, { ok: true });
+				}
+				if (method === 'POST' && path === '/x-topics/run') {
+					if (!sameOrigin(req)) return send(403, { ok: false, error: 'forbidden' });
+					if (!xTopics) return send(200, { ok: false, error: 'x 话题没装好' });
+					const r = await xTopics.runNow();
+					return send(200, { ok: r.ok === true, ...r });
+				}

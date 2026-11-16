@@ -1,0 +1,30 @@
+﻿# Dependencies
+node_modules/
+
+# DSH / fish-soul local data — never commit these
+fish-soul-config.json
+fish-soul/
+*.db
+*.db-wal
+*.db-shm
+*.log
+attachments/
+backups/
+persona.json
+persona.png
+persona.prev.json
+bili-auth.json
+douyin-browser/
+*.zstd
+
+# Secrets
+.env
+.env.*
+*.key
+*.pem
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

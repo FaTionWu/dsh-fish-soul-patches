@@ -1,0 +1,40 @@
+﻿NOTICE
+
+This repository is an unofficial patch kit for dsh-fish-soul.
+Upstream project: https://github.com/Britneycode/dsh-fish-soul
+Upstream license: MIT (declared in the upstream package.json; no LICENSE file
+was present in the upstream repository at the time of writing).
+Base version tested: 0.18.2.
+
+This repository is not affiliated with, sponsored by, or endorsed by the
+upstream author. "dsh-fish-soul" is used only to describe compatibility.
+All trademarks belong to their respective owners.
+
+Files that contain code derived from or excerpted from dsh-fish-soul (MIT),
+and were modified for this patch kit:
+  - patch-fish-soul.mjs (patch snippets that quote upstream code)
+  - fish-soul-patch/followup-methods.txt
+  - fish-soul-patch/sendreply-arm.txt
+  - fish-soul-patch/followup-schema.txt
+  - fish-soul-patch/routes-patches.txt
+  - fish-soul-patch/client-continuity.txt
+  - fish-soul-patch/client-models-xtopics.txt
+  - fish-soul-patch/xtopics-db.txt
+  - fish-soul-patch/xtopics-schema.txt
+  - fish-soul-patch/xtopics-runwebsearch.txt
+  - fish-soul-patch/xtopics-start-extra.txt
+  - fish-soul-patch/xtopics-context.txt
+
+Original additions in this repository (not copied from upstream):
+  - fish-soul-patch/x-topics.js
+  - the surrounding documentation, manifest and tooling
+
+Third-party services referenced by the code or documentation (their own terms
+apply; no credentials or content from them are included here):
+  - Tavily / Bocha / Brave / SearXNG (web search)
+  - X (Twitter) — only public search results, no X API or login
+  - QQ / SnowLuma, Bilibili, Douyin — via the upstream plugin
+
+The software is provided "as is", without warranty of any kind. Users are
+responsible for complying with the terms of service of any platform or API
+they use with it.

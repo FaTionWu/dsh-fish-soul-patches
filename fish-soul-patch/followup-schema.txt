@@ -1,0 +1,14 @@
+﻿		followup: z.object({
+			enabled: z.boolean().default(true),
+			minMinutes: z.number().default(3),
+			maxMinutes: z.number().default(9),
+			secondMinutes: z.number().default(4),
+			secondChance: z.number().default(0.3),
+			autoContinue: z.object({
+				enabled: z.boolean().default(true),
+				chance: z.number().default(0.45),
+				cooldownSeconds: z.number().default(60),
+				minDelayMs: z.number().default(3000),
+				maxDelayMs: z.number().default(8000)
+			}).default({})
+		}).default({}),

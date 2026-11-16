@@ -1,0 +1,42 @@
+﻿		/** 连续对话补丁：没回音追问 / 二次追问 / 自动接话（参数存 fish-soul-config.json 的 followup） */
+		function ContinuityPane({ api, notify }) {
+			const [data, setData] = react.useState(null);
+			const [form, setForm] = react.useState(null);
+			const load = react.useCallback(async () => { const r = await api("GET", "/patches"); if (r?.ok !== false) setData(r); }, [api]);
+			react.useEffect(() => { load(); }, [load]);
+			react.useEffect(() => {
+				if (data && form === null) {
+					const f = data.followup ?? {};
+					const ac = f.autoContinue ?? {};
+					setForm({
+						enabled: f.enabled !== false, minMinutes: f.minMinutes ?? 3, maxMinutes: f.maxMinutes ?? 9,
+						secondMinutes: f.secondMinutes ?? 4, secondChance: Math.round((f.secondChance ?? 0.3) * 100),
+						acEnabled: ac.enabled !== false, chance: Math.round((ac.chance ?? 0.45) * 100),
+						cooldownSeconds: ac.cooldownSeconds ?? 60, minDelayMs: ac.minDelayMs ?? 3000, maxDelayMs: ac.maxDelayMs ?? 8000
+					});
+				}
+			}, [data, form]);
+			if (!data || !form) return null;
+			const patch = (p) => setForm((f) => ({ ...f, ...p }));
+			async function save(p = {}) {
+				const next = { ...form, ...p };
+				setForm(next);
+				const r = await api("POST", "/patches/config", { followup: {
+					enabled: next.enabled === true, minMinutes: Number(next.minMinutes), maxMinutes: Number(next.maxMinutes),
+					secondMinutes: Number(next.secondMinutes), secondChance: Number(next.secondChance) / 100,
+					autoContinue: { enabled: next.acEnabled === true, chance: Number(next.chance) / 100, cooldownSeconds: Number(next.cooldownSeconds), minDelayMs: Number(next.minDelayMs), maxDelayMs: Number(next.maxDelayMs) }
+				} });
+				if (r?.ok) load(); else notify(r?.error ?? "保存失败");
+			}
+			const num = (k, label, min, max, step = 1) => Num({ min, max, step, value: form[k], "aria-label": label, onChange: (e) => patch({ [k]: e.target.value }), onBlur: () => save({ [k]: Number(form[k]) }) });
+			return Group({ title: "连续对话（补丁）", aside: Muted("没回音追问 / 二次追问 / 自动接话") },
+				Row({ title: "没回音追问", desc: "私聊发完回复后对方没再说话，隔一段随机时间追一句或收尾" }, h(Switch, { label: "没回音追问", checked: form.enabled, onChange: (v) => save({ enabled: v }) })),
+				form.enabled ? Row({ title: "间隔（分钟）" }, num("minMinutes", "最短", 1, 180), Muted("–"), num("maxMinutes", "最长", 1, 180), Muted("分钟，每次随机")) : null,
+				form.enabled ? Row({ title: "二次追问" }, num("secondMinutes", "二次间隔", 1, 60), Muted("分钟后"), num("secondChance", "二次概率", 0, 100, 5), Muted("% 概率再追/收尾")) : null,
+				Row({ title: "自动接话", desc: "回复没问句、也没明确收尾时，几秒后自己补一句追问/延伸" }, h(Switch, { label: "自动接话", checked: form.acEnabled, onChange: (v) => save({ acEnabled: v }) })),
+				form.acEnabled ? Row({ title: "概率 / 冷却" }, num("chance", "概率", 0, 100, 5), Muted("% ·"), num("cooldownSeconds", "冷却", 10, 3600), Muted("秒")) : null,
+				form.acEnabled ? Row({ title: "接话延迟" }, num("minDelayMs", "最短延迟", 1000, 30000, 500), Muted("–"), num("maxDelayMs", "最长延迟", 1000, 30000, 500), Muted("毫秒")) : null,
+				Row({ title: "收尾标记 / 思考兜底", desc: "【收尾】各种括号写法会剥掉；正文为空时从思考里捞回来" }, Muted("始终开启")));
+		}
+
+

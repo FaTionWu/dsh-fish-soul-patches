@@ -1,0 +1,16 @@
+﻿-- 每天从 X 上挑的话题（不走 X API；见 x-topics.js）
+CREATE TABLE IF NOT EXISTS x_topic (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  url          TEXT NOT NULL,
+  title        TEXT NOT NULL DEFAULT '',
+  site         TEXT NOT NULL DEFAULT '',
+  author       TEXT NOT NULL DEFAULT '',
+  published_at TEXT NOT NULL DEFAULT '',
+  snippet      TEXT NOT NULL DEFAULT '',
+  score        REAL NOT NULL DEFAULT 0,
+  query        TEXT NOT NULL DEFAULT '',
+  seen_at      INTEGER NOT NULL,
+  day          TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_x_topic_url ON x_topic(url);
+CREATE INDEX IF NOT EXISTS idx_x_topic_day ON x_topic(day);

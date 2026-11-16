@@ -1,0 +1,4 @@
+﻿		if ((isQq || isBili || isDouyin) && xTopics.cfg().enabled) {
+			const seen = xTopics.contextLines(isQq ? 4 : 2);
+			if (seen.length > 0) lines.push('[你最近在 X 上/新闻里看到的（聊到相关的再提，别硬塞；链接可以原样发）]', ...seen);
+		}

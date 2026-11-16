@@ -1,0 +1,132 @@
+    /**
+     * 「没回音」追问：私聊发完回复后挂个计时器，到点对方还没说话，
+     * 就让模型贴着刚才的话题追一句或收个尾。间隔是 [minMinutes, maxMinutes] 的随机值。
+     * 配置读 fish-soul-config.json 的 followup（默认 3–9 分钟；二次在 armSecondFollowUp）。
+     */
+    armFollowUp(row) {
+        const cfg = this.getConfig().followup ?? {};
+        if (cfg.enabled === false) return;
+        const lo = Math.max(1, Math.min(180, Number(cfg.minMinutes ?? cfg.minutes ?? 3)));
+        const hi = Math.max(lo, Math.min(180, Number(cfg.maxMinutes ?? cfg.minutes ?? 9)));
+        const ms = (lo + this.random() * (hi - lo)) * 60_000;
+        const minutes = Math.max(1, Math.round(ms / 60_000));
+        const channelId = row.channel_id;
+        const prev = this.followUps.get(channelId);
+        if (prev !== undefined) clearTimeout(prev.timer);
+        const epoch = (prev?.epoch ?? 0) + 1;
+        const timer = setTimeout(() => {
+            const cur = this.followUps.get(channelId);
+            if (cur === undefined || cur.epoch !== epoch) return;
+            this.followUps.delete(channelId);
+            this.fireFollowUp(channelId, row, minutes);
+        }, ms);
+        timer.unref?.();
+        this.followUps.set(channelId, { epoch, timer });
+    }
+
+    /**
+     * 第一次追问是「追问」不是「收尾」时：过 secondMinutes 分钟，按 secondChance 再掷一次，
+     * 中了就让模型再追一句或收个尾（二次不再往后挂，最多两次）。
+     */
+    armSecondFollowUp(row) {
+        const cfg = this.getConfig().followup ?? {};
+        if (cfg.enabled === false) return;
+        const chance = Math.max(0, Math.min(1, Number(cfg.secondChance ?? 0.3)));
+        const minutes = Math.max(1, Math.min(60, Number(cfg.secondMinutes ?? 4)));
+        const channelId = row.channel_id;
+        const prev = this.secondFollowUps.get(channelId);
+        if (prev !== undefined) clearTimeout(prev.timer);
+        const epoch = (prev?.epoch ?? 0) + 1;
+        const timer = setTimeout(() => {
+            const cur = this.secondFollowUps.get(channelId);
+            if (cur === undefined || cur.epoch !== epoch) return;
+            this.secondFollowUps.delete(channelId);
+            if (this.stopped || this.random() >= chance) return;
+            const p = this.getConfig().proactive ?? {};
+            if (p.enabled === false) return;
+            this.note('proactive', { channelId, title: row?.title ?? '', reason: `第一次追问没回音，${minutes} 分钟后掷到 ${Math.round(chance * 100)}%，再追/收个尾` });
+            this.followupSends.set(channelId, { stage: 2 });
+            void this.triggerProactive(channelId, '上一次追问之后对方还是没回。这次看情况：要是还有没聊完的具体话题，就换个说法再轻轻追一句——追的必须是跟刚才那件事有关的、你真想知道的一点，别重复上次问过的；要是本来就说完了，就直接收个尾（收尾时最后单独一行写【收尾】这几个字，别换成别的括号）。一两条就够，别显得催。', { origin: 'followup' })
+                .catch((error) => this.log('warn', `[fish-soul] 二次追问失败（${channelId}）：${String(error instanceof Error ? error.message : error)}`));
+        }, minutes * 60_000);
+        timer.unref?.();
+        this.secondFollowUps.set(channelId, { epoch, timer });
+    }
+
+    /** 收到这个聊天的消息 / 会话停止 → 撤销还没到点的追问（含二次、自动接话）。 */
+    cancelFollowUp(channelId) {
+        for (const store of [this.followUps, this.secondFollowUps]) {
+            const cur = store?.get(channelId);
+            if (cur === undefined) continue;
+            clearTimeout(cur.timer);
+            store.delete(channelId);
+        }
+        this.followupSends?.delete(channelId);
+        const ac = this.autoContinues?.get(channelId);
+        if (ac !== undefined) {
+            clearTimeout(ac.timer);
+            this.autoContinues.delete(channelId);
+        }
+    }
+
+    /**
+     * 自动接话：回复是一句平铺直叙、没问对方、也没明确收尾时，
+     * 隔几秒（默认 3~8s，概率 chance）自己顺着话题补一句追问/延伸，别干等对方开口。
+     * 用户一开口就撤销；接话会取消 3~9 分钟的那次没回音追问（二选一，不叠加）。
+     */
+    maybeAutoContinue(row, text, st) {
+        const cfg = this.getConfig().followup ?? {};
+        if (cfg.enabled === false) return;
+        const ac = cfg.autoContinue ?? {};
+        if (ac.enabled === false) return;
+        const channelId = row.channel_id;
+        if (!channelId.startsWith('private:')) return;
+        const s = String(text ?? '').trim();
+        if (s === '') return;
+        if (/[？?]/.test(s)) return;                 // 已经问过对方了，别再追
+        if (/(先忙|去忙|忙吧|忙你的|早点睡|早点休息|睡吧|睡一觉|晚安|不催|先这样|回头聊|改天聊|下次聊|不打扰|休息吧|先不说了|就这样吧|挂了)[。！!～~\s]*$/u.test(s)) return; // 她明显收了尾
+        const chance = Math.max(0, Math.min(1, Number(ac.chance ?? 0.45)));
+        if (this.random() >= chance) return;
+        const now = Date.now();
+        const cooldown = Math.max(10, Number(ac.cooldownSeconds ?? 60)) * 1000;
+        if (now - (this.lastAutoContinue.get(channelId) ?? 0) < cooldown) return;
+        this.lastAutoContinue.set(channelId, now);
+        this.cancelFollowUp(channelId);              // 接话就是这次"没回音"的回应
+        const minDelay = Math.max(1000, Number(ac.minDelayMs ?? 3000));
+        const maxDelay = Math.max(minDelay, Number(ac.maxDelayMs ?? 8000));
+        const delay = minDelay + this.random() * (maxDelay - minDelay);
+        const prev = this.autoContinues.get(channelId);
+        if (prev !== undefined) clearTimeout(prev.timer);
+        const epoch = (prev?.epoch ?? 0) + 1;
+        const timer = setTimeout(() => {
+            const cur = this.autoContinues.get(channelId);
+            if (cur === undefined || cur.epoch !== epoch) return;
+            this.autoContinues.delete(channelId);
+            if (this.stopped) return;
+            const p = this.getConfig().proactive ?? {};
+            if (p.enabled === false) return;
+            this.note('proactive', { channelId, title: row?.title ?? '', reason: '上一条说完就停了，自动接一句' });
+            this.followupSends.set(channelId, { stage: 3 });
+            void this.triggerProactive(channelId, '你上一条说完就停了，对方还没接。顺着刚才聊的那件具体事自然补一句：追问他的看法、细节或打算，别空泛、别重复说过的；如果他刚说要忙/要睡，就别追，回 [不回]。', {
+                origin: 'continue',
+                prompt: '【接话】你上一条消息说完就停了，对方还没接话。别干等：顺着你们刚才聊的那件具体事自然补一句——追问他的看法、细节或打算，一两条就够；如果对方刚说要忙/要睡，就别追，回 [不回]。'
+            }).catch((error) => this.log('warn', `[fish-soul] 自动接话失败（${channelId}）：${String(error instanceof Error ? error.message : error)}`));
+        }, delay);
+        timer.unref?.();
+        this.autoContinues.set(channelId, { epoch, timer });
+    }
+
+    /** 到点了：交给模型贴着刚才的话题追一句或收个尾，走主动开口的那条通道。 */
+    fireFollowUp(channelId, row, minutes) {
+        if (this.stopped) return;
+        const p = this.getConfig().proactive ?? {};
+        if (p.enabled === false) return;
+        const reason = `上一条消息发出去 ${minutes} 分钟了，对方一直没回。别硬聊、别催、别说教，也别提什么系统提醒：` +
+            '如果刚才的话头还没落到实处，就自然补一句——追问要贴着你们刚才具体聊的东西问（他说到的那件事、那台设备、那个细节，挑你真想知道的一点问），别空泛地问「在吗」；' +
+            '如果本来就说完了，就轻轻收个尾（比如「那我先忙了，你忙完回我」），收尾时最后单独一行写【收尾】这几个字，别换成别的括号（这行不会发出去）。一两条就够，别追问第二遍。';
+        this.note('proactive', { channelId, title: row?.title ?? '', reason: `等了 ${minutes} 分钟还没回音，去看一眼要不要追一句/收个尾` });
+        this.followupSends.set(channelId, { stage: 1 });
+        void this.triggerProactive(channelId, reason, { origin: 'followup' })
+            .catch((error) => this.log('warn', `[fish-soul] 没回音追问失败（${channelId}）：${String(error instanceof Error ? error.message : error)}`));
+    }
+

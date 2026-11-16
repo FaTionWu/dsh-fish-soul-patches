@@ -1,0 +1,10 @@
+﻿	async function runWebSearch(query, { signal, count, topic, days, includeDomains, excludeDomains } = {}) {
+		return webSearch(webConfig(), query, { fetchImpl: (...args) => (testHooks.webFetch ?? globalThis.fetch)(...args), signal, count, topic, days, includeDomains, excludeDomains });
+	}
+	const xTopics = new XTopics({
+		db,
+		getConfig: () => currentConfig.xTopics ?? {},
+		log,
+		search: (q, opts) => runWebSearch(q, opts),
+		note: (kind, data) => { try { gateway?.note?.(kind, data); } catch { /* 记日志失败不影响 */ } }
+	});
