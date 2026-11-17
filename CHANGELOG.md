@@ -1,3 +1,8 @@
+# v0.2.0 — 2026-11-17
+
+首个带安全加固与 CI 的版本。CI（Windows，0.16.6 / 0.18.2 / 0.18.4）全绿：
+https://github.com/FaTionWu/dsh-fish-soul-patches/actions/runs/43928682660
+
 ## 2026-11-17 — crash recovery + security tests + CI
 
 - Fixed false-positive in security source regex (198.18/15 vs 198.51.100)
