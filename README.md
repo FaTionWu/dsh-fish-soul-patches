@@ -3,7 +3,7 @@
 ![tests](https://github.com/FaTionWu/dsh-fish-soul-patches/actions/workflows/tests.yml/badge.svg)
 
 **Unofficial experience patches for [dsh-fish-soul](https://github.com/Britneycode/dsh-fish-soul) (MIT).**
-**Not affiliated with or endorsed by the upstream author.** Tested against `dsh-fish-soul@0.16.6`, `0.18.2`, `0.18.4`; anchors may break on newer versions. See [TESTING.md](TESTING.md) and [SECURITY.md](SECURITY.md).
+**Not affiliated with or endorsed by the upstream author.** Tested against `dsh-fish-soul@0.16.6`, `0.18.2`, `0.18.4`, `0.18.7`; anchors may break on newer versions. See [TESTING.md](TESTING.md) and [SECURITY.md](SECURITY.md).
 
 [中文说明](#中文说明) · [License](#license--attribution)
 

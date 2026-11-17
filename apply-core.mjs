@@ -426,9 +426,9 @@ if (!fs.existsSync(sdFile)) {
     let gw2 = fs.readFileSync(gwFile2, 'utf8')
     let gwChanged = false
     if (!gw2.includes("from './internal-markup.js'")) {
-        const imp = "import { typingDelayMs, interjectScore, interjectConfig, platformOf, splitChannelId, sessionChannelOf, isGroupChannelId, service, parseClosing, clampReplyWindow } from './gateway-util.js';"
-        if (!gw2.includes(imp)) { out('[!!] gateway.js（内部标记）: 找不到 gateway-util import'); failed = true }
-        else { gw2 = gw2.replace(imp, imp + "\nimport { stripInternalMarkup } from './internal-markup.js';"); gwChanged = true }
+        const impRe = /import \{[^}]*\} from '\.\/gateway-util\.js';/
+        if (!impRe.test(gw2)) { out('[!!] gateway.js（内部标记）: 找不到 gateway-util import'); failed = true }
+        else { gw2 = gw2.replace(impRe, (m) => m + "\nimport { stripInternalMarkup } from './internal-markup.js';"); gwChanged = true }
     }
     if (!gw2.includes('stripInternalMarkup(stripClosingMarks')) {
         const before = gw2

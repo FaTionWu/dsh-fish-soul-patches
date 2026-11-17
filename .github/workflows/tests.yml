@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: ['0.16.6', '0.18.2', '0.18.4']
+        version: ['0.16.6', '0.18.2', '0.18.7']
     steps:
       - uses: actions/checkout@v5
 
