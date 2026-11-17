@@ -411,5 +411,56 @@ if (!fs.existsSync(sdFile)) {
 		if (ok8m) { fs.writeFileSync(modelsFile2, mt, 'utf8'); out('[done] client.models.js（X 话题 UI）: 已打补丁') } else failed = true
 	}
 }
+// ── 9) 出站剥离内部标记（system-reminder / DSML）──────────────────────
+{
+    const imFile = path.join(lib, 'internal-markup.js')
+    const imData = path.join(patchDir, 'internal-markup.js')
+    if (!fs.existsSync(imData)) { out('[!!] internal-markup.js: 缺少补丁数据文件'); failed = true }
+    else {
+        const want = fs.readFileSync(imData, 'utf8')
+        if (fs.existsSync(imFile) && fs.readFileSync(imFile, 'utf8') === want) out('[ok] internal-markup.js: 已经是补丁后的内容')
+        else { fs.writeFileSync(imFile, want, 'utf8'); out('[done] internal-markup.js: 已放入') }
+    }
+
+    const gwFile2 = path.join(lib, 'gateway.js')
+    let gw2 = fs.readFileSync(gwFile2, 'utf8')
+    let gwChanged = false
+    if (!gw2.includes("from './internal-markup.js'")) {
+        const imp = "import { typingDelayMs, interjectScore, interjectConfig, platformOf, splitChannelId, sessionChannelOf, isGroupChannelId, service, parseClosing, clampReplyWindow } from './gateway-util.js';"
+        if (!gw2.includes(imp)) { out('[!!] gateway.js（内部标记）: 找不到 gateway-util import'); failed = true }
+        else { gw2 = gw2.replace(imp, imp + "\nimport { stripInternalMarkup } from './internal-markup.js';"); gwChanged = true }
+    }
+    if (!gw2.includes('stripInternalMarkup(stripClosingMarks')) {
+        const before = gw2
+        gw2 = gw2.replace('raw = stripClosingMarks(closingScan.text);', 'raw = stripInternalMarkup(stripClosingMarks(closingScan.text));')
+        gw2 = gw2.replace('const 净文字 = stripClosingMarks(this.cleanOut(picked.净文字, row));', 'const 净文字 = stripInternalMarkup(stripClosingMarks(this.cleanOut(picked.净文字, row)));')
+        if (gw2 === before) { out('[!!] gateway.js（内部标记）: 找不到 sendReply 锚点'); failed = true }
+        else gwChanged = true
+    }
+    if (!gw2.includes('正文里只有内部标记')) {
+        const a = "if (raw === '' && collected.items.length > 0) return true;"
+        if (!gw2.includes(a)) { out('[!!] gateway.js（内部标记）: 找不到 sticker 提前返回锚点'); failed = true }
+        else {
+            gw2 = gw2.replace(a, a + "\n\t\tif (raw.trim() === '' && (st.images ?? []).length === 0) {\n\t\t\tthis.note('silent', { channelId: row.channel_id, title: row.title, reason: '正文里只有内部标记，已丢弃', memories, ...recallNote });\n\t\t\treturn true;\n\t\t}")
+            gwChanged = true
+        }
+    }
+    if (gwChanged) { fs.writeFileSync(gwFile2, gw2, 'utf8'); out('[done] gateway.js（内部标记）: 已打补丁') }
+    else out('[ok] gateway.js（内部标记）: 已经是补丁后的内容')
+
+    const idxFile2 = path.join(lib, 'index.js')
+    let idx2 = fs.readFileSync(idxFile2, 'utf8')
+    if (idx2.includes('[内部标记]')) out('[ok] index.js（内部标记规则）: 已经是补丁后的内容')
+    else {
+        const a = "lines.push('[接着说] 这一轮想说的没说完，就空一行接着写完（会拆成几条连发）；不要写半截停住等对方回话，也别写成「我跟你说…」然后等他问。一个话题自然聊完时，顺着刚才那件具体事反问/追问一句，让话有下一句；对方明显不想聊了才收住。');"
+        if (!idx2.includes(a)) { out('[!!] index.js（内部标记规则）: 找不到 [接着说] 锚点'); failed = true }
+        else {
+            idx2 = idx2.replace(a, a + "\n\t\t\tlines.push('[内部标记] 不要把 <system-reminder>、工具调用标签（DSML 等）写进回复正文；这些是内部内容，只写要发给对方的话。');")
+            fs.writeFileSync(idxFile2, idx2, 'utf8')
+            out('[done] index.js（内部标记规则）: 已打补丁')
+        }
+    }
+}
+
 out(failed ? '\n有步骤没成功，先别急着重启，看看上面的提示。' : '\n补丁完成，重启 DSH 生效。')
 process.exitCode = failed ? 1 : 0

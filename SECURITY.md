@@ -84,3 +84,12 @@ node tests/run-matrix.mjs 0.18.2        # 原始/已打补丁/漂移/回滚
 - 两条分别校验，`tests/security-source.test.mjs` 覆盖原始版、正确补丁、缺 51、只有 51、只有 18 五种 fixture。
 
 另外新增 `tests/security-download.test.mjs`：真实 localhost HTTP 拒绝、注入 DNS 的私有/混合地址、重定向到私网、重定向到公网、userinfo、端口、协议、大小上限、fake-IP 成功路径。
+## 9. 出站内部标记剥离（2026-11-17）
+
+线上出现过一次模型把 `<system-reminder>…</system-reminder>` 和 DSML 工具调用标签（`</||DSML|| parameter>`）当正文输出，fish-soul 原样转发到 QQ。现在 `lib/internal-markup.js` 在出站前剥掉：
+
+- 成对/未闭合的 `<system-reminder>` 块；
+- 半角/全角竖线的 DSML 标签；
+- 常见工具调用 XML（`tool_call` / `invoke` / `parameter` 等）。
+
+`tests/internal-markup.test.mjs` 用线上泄漏样本做回归；`--verify` 也会检查模块和标记。

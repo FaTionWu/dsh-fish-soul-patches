@@ -77,6 +77,7 @@ node ./patch-fish-soul.mjs --health --url http://127.0.0.1:51374 --cookie "dsh_s
 ```powershell
 node tests/security-source.test.mjs     # 源码规则 + 反向用例（198.18/15 vs 198.51.100）
 node tests/security-download.test.mjs   # 真实本地 HTTP + DNS/重定向/大小/fake-IP 注入用例
+node tests/internal-markup.test.mjs      # system-reminder / DSML / 工具标签不能出现在出站正文
 node tests/crash-recovery.test.mjs      # SIGKILL 中途写文件 → 下次启动恢复；备份缺失时拒绝部分恢复
 ```
 

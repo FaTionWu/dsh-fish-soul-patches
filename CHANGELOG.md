@@ -1,3 +1,8 @@
+# Unreleased — 2026-11-17
+
+- 出站剥离 system-reminder / DSML / 工具调用标签，防止内部内容发到 QQ
+- 新增 internal-markup 补丁与回归测试
+
 # v0.2.0 — 2026-11-17
 
 首个带安全加固与 CI 的版本。CI（Windows，0.16.6 / 0.18.2 / 0.18.4）全绿：

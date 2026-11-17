@@ -35,6 +35,7 @@ jobs:
           node --check tests/run-matrix.mjs
           node --check tests/security-source.test.mjs
           node --check tests/security-download.test.mjs
+          node --check tests/internal-markup.test.mjs
           node --check tests/crash-recovery.test.mjs
 
       - name: Security source rules (fixtures)
