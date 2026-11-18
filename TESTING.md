@@ -5,14 +5,14 @@
 ## 自动化矩阵
 
 ```powershell
-node tests/run-matrix.mjs 0.16.6 0.18.2 0.18.7
+node tests/run-matrix.mjs 0.16.6 0.18.2 0.18.9
 ```
 
 脚本会从 npm 下载对应版本的 `dsh-fish-soul`，解压到临时 profile，逐项执行：
 
 | 场景 | 版本 | 预期结果 |
 |------|------|----------|
-| 原始版本 | 0.16.6 / 0.18.2 / 0.18.7 | `--check` 通过 → `--apply` 后文件变化 → `--verify` 通过 |
+| 原始版本 | 0.16.6 / 0.18.2 / 0.18.9 | `--check` 通过 → `--apply` 后文件变化 → `--verify` 通过 |
 | 已打补丁版本 | 同上 | 第二次 `--apply --no-backup` 幂等，文件 hash 不变 |
 | 锚点漂移版本 | 0.18.2（改坏 `persona.js` 锚点） | `--check` 非 0 退出；真实文件 hash 不变（沙箱预检失败，不落盘） |
 | 回滚 | 原始包 | `--rollback` 后所有文件 hash 回到原始值，新增的 `lib/x-topics.js` 被删除 |

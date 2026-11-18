@@ -1,7 +1,8 @@
-# Unreleased — 2026-11-17
+# Unreleased — 2026-11-18
 
 - 适配 dsh-fish-soul 0.18.7：gateway-util import 改为正则匹配（上游新增 normalizeRelayId）
 - 0.18.7 矩阵通过（原始/已打补丁/漂移/回滚）
+- 0.18.9 矩阵通过；补丁备份 ID 20261118143749
 
 - 出站剥离 system-reminder / DSML / 工具调用标签，防止内部内容发到 QQ
 - 新增 internal-markup 补丁与回归测试
