@@ -1,4 +1,7 @@
-# Unreleased — 2026-11-18
+# v0.2.1 — 2026-11-18
+
+支持 dsh-fish-soul 0.18.9；CI（0.16.6 / 0.18.2 / 0.18.9）全绿：
+https://github.com/FaTionWu/dsh-fish-soul-patches/actions/runs/44328898298
 
 - 适配 dsh-fish-soul 0.18.7：gateway-util import 改为正则匹配（上游新增 normalizeRelayId）
 - 0.18.7 矩阵通过（原始/已打补丁/漂移/回滚）
