@@ -1,3 +1,7 @@
+# Unreleased — 2026-11-19
+
+- fish_search 网络失败（fetch failed / 5xx）自动重试一次；4xx 和外部取消不重试
+
 # v0.2.1 — 2026-11-18
 
 支持 dsh-fish-soul 0.18.9；CI（0.16.6 / 0.18.2 / 0.18.9）全绿：

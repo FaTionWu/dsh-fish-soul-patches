@@ -462,5 +462,35 @@ if (!fs.existsSync(sdFile)) {
     }
 }
 
+// ── 10) fish_search 网络失败自动重试一次（fetch failed / 5xx）──────────
+{
+	const srFile = path.join(lib, 'search-retry.js')
+	const srData = path.join(patchDir, 'search-retry.js')
+	if (!fs.existsSync(srData)) { out('[!!] search-retry.js: 缺少补丁数据文件'); failed = true }
+	else {
+		const want = fs.readFileSync(srData, 'utf8')
+		if (fs.existsSync(srFile) && fs.readFileSync(srFile, 'utf8') === want) out('[ok] search-retry.js: 已经是补丁后的内容')
+		else { fs.writeFileSync(srFile, want, 'utf8'); out('[done] search-retry.js: 已放入') }
+	}
+
+	const idxFile3 = path.join(lib, 'index.js')
+	let idx3 = fs.readFileSync(idxFile3, 'utf8')
+	let idxChanged = false
+	if (!idx3.includes("from './search-retry.js'")) {
+		const imp = "import { webSearchConfig, ownSearchReady, webSearch, formatSearch } from './websearch.js';"
+		if (!idx3.includes(imp)) { out('[!!] index.js（搜索重试）: 找不到 websearch import'); failed = true }
+		else { idx3 = idx3.replace(imp, imp + "\nimport { withSearchRetry } from './search-retry.js';"); idxChanged = true }
+	}
+	if (!idx3.includes('withSearchRetry(() => runWebSearch')) {
+		const a = 'return formatSearch(q, await runWebSearch(q, { signal: toolCtx?.signal }));'
+		if (!idx3.includes(a)) { out('[!!] index.js（搜索重试）: 找不到 fish_search 调用'); failed = true }
+		else {
+			idx3 = idx3.replace(a, 'return formatSearch(q, await withSearchRetry(() => runWebSearch(q, { signal: toolCtx?.signal }), { signal: toolCtx?.signal }));')
+			idxChanged = true
+		}
+	}
+	if (idxChanged) { fs.writeFileSync(idxFile3, idx3, 'utf8'); out('[done] index.js（搜索重试）: 已打补丁') }
+	else out('[ok] index.js（搜索重试）: 已经是补丁后的内容')
+}
 out(failed ? '\n有步骤没成功，先别急着重启，看看上面的提示。' : '\n补丁完成，重启 DSH 生效。')
 process.exitCode = failed ? 1 : 0
