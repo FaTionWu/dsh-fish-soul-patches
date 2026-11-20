@@ -1,4 +1,6 @@
-# Unreleased — 2026-11-19
+# Unreleased — 2026-11-20
+
+- 适配 dsh-fish-soul 0.18.14；矩阵通过，补丁备份 ID 20261120055804
 
 - fish_search 网络失败（fetch failed / 5xx）自动重试一次；4xx 和外部取消不重试
 
