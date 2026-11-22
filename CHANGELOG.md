@@ -1,4 +1,6 @@
-# Unreleased — 2026-11-20
+# Unreleased — 2026-11-23
+
+- 适配 dsh-fish-soul 0.18.22（dispatch 增加 opts，锚点兼容）；矩阵通过，备份 ID 20261122162807
 
 - 适配 dsh-fish-soul 0.18.14；矩阵通过，补丁备份 ID 20261120055804
 

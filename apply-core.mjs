@@ -91,7 +91,7 @@ if (!fs.existsSync(gwFile)) {
 				'stop() 清理'
 			)
 			ins(
-				/async dispatch\(channelId, items\) \{\n[ \t]*if \(this\.stopped \|\| items\.length === 0\) return;\n/,
+				/async dispatch\(channelId, items(?:, opts = \{\})?\) \{\n[ \t]*if \(this\.stopped \|\| items\.length === 0\) return;\n/,
 				'\t\t// 对方开口了：撤掉还没到点的「没回音」追问/收尾\n\t\tthis.cancelFollowUp(channelId);\n',
 				'dispatch 撤销'
 			)
