@@ -36,6 +36,8 @@ A patch kit, not a fork and not a plugin. It applies a set of anchor-based patch
 11. **Search result modes** — default **links-only** (titles/URLs, no raw snippets, low tokens) or
     **sandbox summary** (one isolated summarizer call first; automatically falls back to links if the
     platform blocks it). Switch under Model → Web Search.
+12. **Content-risk recovery** — if DeepSeek still rejects a turn with `Content Exists Risk`, the session is
+    marked unusable and the next message opens a fresh session (memory preserved), with a direct notice.
 
 ## Requirements
 

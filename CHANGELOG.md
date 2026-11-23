@@ -2,6 +2,7 @@
 
 - 新增搜索结果两模式：links（默认，只给标题/链接，省 token）与 summary（临时沙箱摘要，失败自动降级 links）
 - 设置页 Model → Web Search 增加开关；摘要使用独立 search 模型功能
+- Content Exists Risk 自动换新会话：标记旧会话、下一条新建、直接给用户提示（0.18.22+）
 
 - 适配 dsh-fish-soul 0.18.22（dispatch 增加 opts，锚点兼容）；矩阵通过，备份 ID 20261122162807
 
