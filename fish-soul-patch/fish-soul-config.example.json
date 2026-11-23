@@ -1,15 +1,24 @@
-﻿{
+{
   "followup": {
     "enabled": true,
     "minMinutes": 3,
     "maxMinutes": 9,
     "secondMinutes": 4,
     "secondChance": 0.3,
-    "autoContinue": { "enabled": true, "chance": 0.45, "cooldownSeconds": 60, "minDelayMs": 3000, "maxDelayMs": 8000 }
+    "autoContinue": {
+      "enabled": true,
+      "chance": 0.45,
+      "cooldownSeconds": 60,
+      "minDelayMs": 3000,
+      "maxDelayMs": 8000
+    }
   },
   "xTopics": {
     "enabled": true,
-    "sources": ["x", "news"],
+    "sources": [
+      "x",
+      "news"
+    ],
     "runsPerDay": 3,
     "newsPerRun": 2,
     "xPerRun": 1,
@@ -18,8 +27,15 @@
     "maxXAgeHours": 168,
     "monthlySearchCap": 280,
     "dailySearchCap": 10,
-    "slots": [12, 18, 21],
-    "activeHours": [8, 24],
+    "slots": [
+      12,
+      18,
+      21
+    ],
+    "activeHours": [
+      8,
+      24
+    ],
     "queries": [],
     "xQueries": [],
     "newsDomains": [],
@@ -33,7 +49,10 @@
       "enabled": true,
       "perDay": 20,
       "provider": "tavily",
-      "apiKeys": { "tavily": "tvly-替换成你的 key" }
+      "apiKeys": {
+        "tavily": "tvly-替换成你的 key"
+      },
+      "searchMode": "links"
     }
   }
 }

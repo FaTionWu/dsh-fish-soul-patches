@@ -14,6 +14,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { applySearchMode } from './fish-soul-patch/search-mode-patch.mjs'
 
 // 测试钩子：写入 N 个文件后 SIGKILL 自己，用来验证 wrapper 的崩溃恢复。
 const crashAfterWrites = Number(process.env.FS_PATCH_CRASH_AFTER || 0)
@@ -491,6 +492,11 @@ if (!fs.existsSync(sdFile)) {
 	}
 	if (idxChanged) { fs.writeFileSync(idxFile3, idx3, 'utf8'); out('[done] index.js（搜索重试）: 已打补丁') }
 	else out('[ok] index.js（搜索重试）: 已经是补丁后的内容')
+}
+// ── 11) 搜索结果模式（links / summary 沙箱摘要）+ 设置页开关 ──────────
+{
+	const r = applySearchMode({ lib, patchDir, out })
+	if (!r.ok) failed = true
 }
 out(failed ? '\n有步骤没成功，先别急着重启，看看上面的提示。' : '\n补丁完成，重启 DSH 生效。')
 process.exitCode = failed ? 1 : 0

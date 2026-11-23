@@ -233,5 +233,32 @@
                       ],
         "appliesTo":  "\u003e=0.16.0 \u003c0.19.0",
         "rollback":  "恢复 lib/index.js，删除 lib/search-retry.js"
+    },
+    {
+        "id":  "search-mode",
+        "title":  "搜索结果链接/沙箱摘要两模式",
+        "files":  [
+                      "lib/search-mode.js",
+                      "lib/config-schema.js",
+                      "lib/websearch.js",
+                      "lib/llm.js",
+                      "lib/routes-v07.js",
+                      "lib/client.models.js",
+                      "lib/index.js"
+                  ],
+        "markers":  [
+                        "formatLinkResults",
+                        "searchMode: z.string()",
+                        "搜索结果模式",
+                        "[\u0027search\u0027, \u0027搜索摘要\u0027]"
+                    ],
+        "requires":  [
+
+                     ],
+        "conflicts":  [
+
+                      ],
+        "appliesTo":  "\u003e=0.18.0 \u003c0.19.0",
+        "rollback":  "恢复上述文件并删除 lib/search-mode.js"
     }
 ]

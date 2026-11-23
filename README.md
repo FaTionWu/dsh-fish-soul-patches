@@ -33,10 +33,13 @@ A patch kit, not a fork and not a plugin. It applies a set of anchor-based patch
    configured web search (Tavily/Bocha/host).
 10. **Settings UI** — “连续对话（补丁）” under Platform → QQ, and “X 话题（补丁）” under Model → Web
     Search; plus `GET/POST /patches` and `POST /x-topics/run`.
+11. **Search result modes** — default **links-only** (titles/URLs, no raw snippets, low tokens) or
+    **sandbox summary** (one isolated summarizer call first; automatically falls back to links if the
+    platform blocks it). Switch under Model → Web Search.
 
 ## Requirements
 
-- DSH Desktop with `dsh-fish-soul@0.18.2` installed (the desktop profile is app-managed; install the
+- DSH Desktop with `dsh-fish-soul@0.18.22` installed (the desktop profile is app-managed; install the
   plugin through the DSH plugin manager/market, **not** `dsh plugin --profile desktop ...`).
 - Node.js ≥ 22.5.
 - Optional: a Tavily API key (free tier, no credit card) for the X topics feature; or Bocha / DSH host
@@ -159,6 +162,7 @@ After restarting DSH:
 
 - **Platform → QQ → 连续对话（补丁）**: follow-up window, second follow-up, auto-continue.
 - **Model → Web Search → X 话题（补丁）**: sources, budget, limits, slots, custom queries, “跑一轮”.
+- **Model → Web Search → 搜到可能敏感的内容时**: 链接模式 / 沙箱摘要模式。
 
 ## Data and files
 
