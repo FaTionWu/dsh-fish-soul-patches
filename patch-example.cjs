@@ -1,1 +1,0 @@
-﻿const fs=require('node:fs');const f='fish-soul-patch/fish-soul-config.example.json';const c=JSON.parse(fs.readFileSync(f,'utf8').replace(/^\uFEFF/,''));c.tools=c.tools||{};c.tools.web=c.tools.web||{};if(!c.tools.web.searchMode)c.tools.web.searchMode='links';fs.writeFileSync(f,JSON.stringify(c,null,2)+'\n','utf8');console.log('example updated')
