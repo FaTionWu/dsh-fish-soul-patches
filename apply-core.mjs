@@ -495,8 +495,15 @@ if (!fs.existsSync(sdFile)) {
 }
 // ── 11) 搜索结果模式（links / summary 沙箱摘要）+ 设置页开关 ──────────
 {
-	const r = applySearchMode({ lib, patchDir, out })
-	if (!r.ok) failed = true
+	let ver = ''
+	try { ver = String(JSON.parse(fs.readFileSync(path.join(lib, '..', 'package.json'), 'utf8')).version ?? '') } catch { /* 读不到就跳过 */ }
+	const mm = /^0\.(\d+)\./.exec(ver)
+	if (mm !== null && Number(mm[1]) >= 18) {
+		const r = applySearchMode({ lib, patchDir, out })
+		if (!r.ok) failed = true
+	} else {
+		out(`[skip] 搜索结果模式：${ver || '未知版本'} 不支持（需要 0.18.x）`)
+	}
 }
 out(failed ? '\n有步骤没成功，先别急着重启，看看上面的提示。' : '\n补丁完成，重启 DSH 生效。')
 process.exitCode = failed ? 1 : 0

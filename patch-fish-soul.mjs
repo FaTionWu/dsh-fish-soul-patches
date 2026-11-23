@@ -165,6 +165,14 @@ function nextBackupId() {
   return id
 }
 
+function isOptionalSkipped(p, v = version()) {
+  return p.optional === true && !satisfies(v, p.appliesTo)
+}
+
+function activeMeta(meta) {
+  const v = version()
+  return meta.filter((p) => !isOptionalSkipped(p, v))
+}
 function writeJson(file, obj) {
   const tmp = `${file}.tmp-${process.pid}`
   fs.writeFileSync(tmp, JSON.stringify(obj, null, 2) + '\n')
@@ -398,11 +406,12 @@ async function verify() {
   if (!checkMeta(meta)) return false
   const v = version()
   out(`\n=== 校验 dsh-fish-soul ${v} @ ${pluginDir} ===`)
-  for (const p of meta) {
+  const active = activeMeta(meta)
+  for (const p of active) {
     if (!satisfies(v, p.appliesTo)) bad(`${p.id}: 版本 ${v} 不在 ${p.appliesTo}`)
   }
-  checkMarkers(meta)
-  checkSyntax(meta)
+  checkMarkers(active)
+  checkSyntax(active)
   await checkModules()
   checkSecuritySource()
   await checkDbAndConfig()
@@ -413,7 +422,7 @@ async function verify() {
 async function health() {
   failed = false
   out(`\n=== 运行时健康检查 ===`)
-  const meta = loadMeta()
+  const meta = activeMeta(loadMeta())
   checkMarkers(meta)
   await checkModules()
   await checkDbAndConfig()
@@ -437,12 +446,13 @@ async function health() {
 
 function apply(meta) {
   if (!sandboxCheck(meta)) return false
+  const active = activeMeta(meta)
   const v = version()
-  for (const p of meta) {
+  for (const p of active) {
     if (!satisfies(v, p.appliesTo)) bad(`${p.id}: 版本 ${v} 不在 ${p.appliesTo}（加 --force 也不建议）`)
   }
   if (failed) return false
-  const backupId = has('--no-backup') ? '' : backup(meta)
+  const backupId = has('--no-backup') ? '' : backup(active)
   const r = runNode(core, { DSH_PROFILE_DIR: profileDir })
   for (const line of r.out.split(/\r?\n/).filter(Boolean)) out(`    ${line}`)
   if (r.code !== 0) {
