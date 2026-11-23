@@ -261,5 +261,29 @@
         "appliesTo":  "\u003e=0.18.0 \u003c0.19.0",
         "rollback":  "恢复上述文件并删除 lib/search-mode.js",
         "optional":  true
+    },
+    {
+        "id":  "content-risk",
+        "title":  "Content Exists Risk 自动换会话",
+        "files":  [
+                      "lib/content-risk.js",
+                      "lib/gateway.js",
+                      "lib/diag-log.js"
+                  ],
+        "markers":  [
+                        "CONTENT_RISK_SESSION_KEY",
+                        "isContentRiskReason",
+                        "CONTENT_RISK_NOTICE",
+                        "session-content-risk"
+                    ],
+        "requires":  [
+
+                     ],
+        "conflicts":  [
+
+                      ],
+        "appliesTo":  "\u003e=0.18.22 \u003c0.19.0",
+        "optional":  true,
+        "rollback":  "恢复 lib/gateway.js，删除 lib/content-risk.js"
     }
 ]

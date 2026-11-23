@@ -38,6 +38,7 @@ jobs:
           node --check tests/internal-markup.test.mjs
           node --check tests/search-retry.test.mjs
           node --check tests/search-mode.test.mjs
+          node --check tests/content-risk.test.mjs
           node --check tests/crash-recovery.test.mjs
 
       - name: Security source rules (fixtures)

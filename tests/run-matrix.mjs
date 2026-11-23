@@ -97,7 +97,7 @@ function testVersion(version) {
 
 		const verify1 = runPatch(profile, backup, ['--verify'])
 		if (verify1.code !== 0) throw new Error(`--verify 失败\n${verify1.out.slice(-2000)}`)
-		for (const test of ['security-source.test.mjs', 'security-download.test.mjs', 'internal-markup.test.mjs', 'search-retry.test.mjs', 'search-mode.test.mjs']) {
+		for (const test of ['security-source.test.mjs', 'security-download.test.mjs', 'internal-markup.test.mjs', 'search-retry.test.mjs', 'search-mode.test.mjs', 'content-risk.test.mjs']) {
 			const r = run(process.execPath, [path.join(repo, 'tests', test)], { cwd: repo, env: { ...process.env, DSH_PROFILE_DIR: profile } })
 			if (r.status !== 0) throw new Error(`${test} 失败\n${r.stdout ?? ''}${r.stderr ?? ''}`.slice(-2500))
 		}
