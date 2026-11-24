@@ -29,4 +29,21 @@ assert.equal(stripInternalMarkup('好。\n<system-reminder>内部</system-remind
 assert.equal(stripInternalMarkup('只有内部\n<system-reminder>不要发</system-reminder>'), '只有内部')
 assert.equal(stripInternalMarkup('<system-reminder>No closing tag'), '')
 assert.equal(stripInternalMarkup('正常一句话，没有标记。'), '正常一句话，没有标记。')
+
+const leaked = `行，那是我把话说过头了。
+
+你本来就把决定权递给她了。
+
+倒是我多虑了
+
+【接话】你上一条消息说完就停了，对方还没接话。别干等：顺着你们刚才聊的那件具体事自然补一句。
+
+<system-reminder>
+内部提醒
+</system-reminder>
+
+[不回]`
+assert.equal(stripInternalMarkup(leaked), '行，那是我把话说过头了。\n\n你本来就把决定权递给她了。\n\n倒是我多虑了')
+assert.equal(stripInternalMarkup('【主动开口】别发这个'), '')
+assert.equal(stripInternalMarkup('[不回]'), '')
 console.log('PASS  internal markup stripping')

@@ -9,6 +9,10 @@
  */
 export function stripInternalMarkup(text) {
 	let s = String(text ?? '');
+	// fish 自己注入的指令（自动接话/主动开口/系统提醒）如果被模型复述，正文里从它开始整段丢掉。
+	const promptAt = s.search(/【(?:接话|主动开口|系统提醒)】|\[系统提醒\]/);
+	if (promptAt >= 0) s = s.slice(0, promptAt);
+
 	// system-reminder：成对的整段删；没有闭合标签的，从它开始删到结尾（内部内容不发出）
 	s = s.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/gi, '');
 	s = s.replace(/<system-reminder>[\s\S]*$/gi, '');
@@ -18,5 +22,6 @@ export function stripInternalMarkup(text) {
 	s = s.replace(/<\/?\s*[|｜]{1,2}\s*[^<>|｜]{0,40}\s*[|｜]{1,2}\s*>/g, '');
 	// 常见工具调用 XML（模型偶尔当正文写出来）
 	s = s.replace(/<\/?(?:tool_call|function_calls?|invoke|parameter|tool_result)\b[^>]*>/gi, '');
+	s = s.replace(/^\s*\[(不回|沉默|skip)\]\s*$/gim, '');
 	return s.replace(/\n{3,}/g, '\n\n').trim();
 }
