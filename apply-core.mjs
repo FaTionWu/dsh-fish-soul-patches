@@ -16,6 +16,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { applySearchMode } from './fish-soul-patch/search-mode-patch.mjs'
 import { applyContentRisk } from './fish-soul-patch/content-risk-patch.mjs'
+import { applyReplyPreserve } from './fish-soul-patch/reply-preserve-patch.mjs'
 
 // 测试钩子：写入 N 个文件后 SIGKILL 自己，用来验证 wrapper 的崩溃恢复。
 const crashAfterWrites = Number(process.env.FS_PATCH_CRASH_AFTER || 0)
@@ -517,6 +518,19 @@ if (!fs.existsSync(sdFile)) {
 		if (!r.ok) failed = true
 	} else {
 		out(`[skip] 内容风控自愈：${ver || '未知版本'} 不支持（需要 0.18.22+）`)
+	}
+}
+// ── 13) 多步 turn 的最后一步 [不回] 不覆盖前面真正的回复 ─────────────
+{
+	let ver = ''
+	try { ver = String(JSON.parse(fs.readFileSync(path.join(lib, '..', 'package.json'), 'utf8')).version ?? '') } catch { /* 读不到就跳过 */ }
+	const mm = /^0\.(\d+)\.(\d+)/.exec(ver)
+	const supported = mm !== null && (Number(mm[1]) > 18 || (Number(mm[1]) === 18 && Number(mm[2]) >= 22))
+	if (supported) {
+		const r = applyReplyPreserve({ lib, out })
+		if (!r.ok) failed = true
+	} else {
+		out(`[skip] 回复保留：${ver || '未知版本'} 不支持（需要 0.18.22+）`)
 	}
 }
 out(failed ? '\n有步骤没成功，先别急着重启，看看上面的提示。' : '\n补丁完成，重启 DSH 生效。')
