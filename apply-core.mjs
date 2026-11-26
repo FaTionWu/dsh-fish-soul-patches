@@ -108,8 +108,10 @@ if (!fs.existsSync(gwFile)) {
 				'\n' + fs.readFileSync(methodsFile, 'utf8'),
 				'追问方法'
 			)
-			// 自动接话需要 triggerProactive 支持自定义提示（meta.prompt）
-			if (ok) {
+			// 自动接话需要 triggerProactive 支持自定义提示（meta.prompt）；0.19 起上游已内置
+			if (ok && (gw.includes("typeof meta.prompt === 'string'") || gw.includes('String(meta.prompt ?? reason)'))) {
+				out('[ok] gateway.js（没回音追问）: 上游已支持自定义提示，跳过接话提示补丁')
+			} else if (ok) {
 				const promptRe = /text: `【主动开口】\$\{this\.soul\.nowLabel\(\)\}，你想主动找\$\{kind === 'group' \? '群里的大家' : '对方'\}说话。` \+\n[ \t]*`理由：\$\{sanitizeUserText\(reason\)\}。直接写要发出去的那条消息，像平时聊天一样自然，` \+\n[ \t]*'别提"系统""提醒任务""主动开口"这些字眼。'/
 				if (!promptRe.test(gw)) { ok = false; out('[!!] gateway.js（没回音追问）: 找不到接话自定义提示锚点') }
 				else {
@@ -370,11 +372,10 @@ if (!fs.existsSync(sdFile)) {
 	const routesFile = path.join(lib, 'routes.js')
 	let rt = fs.readFileSync(routesFile, 'utf8')
 	if (!rt.includes("'/patches'")) {
-		const depA = 'const { db, clock, embedder, worker, life, getConfig, saveConfig, log, gateway, channel, bili, biliClient, browser, biliSocial } = deps;'
-		const depB = 'const { db, clock, embedder, worker, life, getConfig, saveConfig, log, gateway, channel, bili, biliClient, browser, biliSocial, xTopics } = deps;'
+		const depRe = /const \{ (db, clock, embedder, worker, life, getConfig, saveConfig, log, gateway, channel, bili, biliClient, browser, biliSocial(?:, persona)?) \} = deps;/
 		const anchor = "\t\t\t\tif (method === 'POST' && path === '/channels/qq-config') {"
 		let ok8 = true
-		if (!rt.includes(depA)) { ok8 = false; out('[!!] routes.js（patches）: 找不到 deps 行') } else rt = rt.replace(depA, depB)
+		if (!depRe.test(rt)) { ok8 = false; out('[!!] routes.js（patches）: 找不到 deps 行') } else rt = rt.replace(depRe, (m, list) => `const { ${list}, xTopics } = deps;`)
 		if (!rt.includes(anchor)) { ok8 = false; out('[!!] routes.js（patches）: 找不到 qq-config 锚点') } else rt = rt.replace(anchor, fs.readFileSync(path.join(patchDir, 'routes-patches.txt'), 'utf8') + anchor)
 		if (ok8) { fs.writeFileSync(routesFile, rt, 'utf8'); out('[done] routes.js（patches）: 已打补丁') } else failed = true
 	} else out('[ok] routes.js（patches）: 已经是补丁后的内容')
@@ -406,11 +407,11 @@ if (!fs.existsSync(sdFile)) {
 	else {
 		const compAnchor2 = '\t\t/** 上网查：DSH 自带的 web_search'
 		const startAnchor = '\t\t\treturn Group({ title: "上网查" },'
-		const endAnchor2 = 'w.enabled ? Row({ title: "每天最多" }, Num({ min: 0, max: 500, value: perDay, "aria-label": "每天最多", onChange: (e) => setPerDay(e.target.value), onBlur: () => save({}) }), Muted("次")) : null);'
+		const endRe2 = /\t\t\t\tw\.enabled \? Row\(\{ title: "每天最多" \}, Num\(\{ min: 0, max: 500, value: perDay,[^\n]*: null\);/
 		let ok8m = true
 		if (!mt.includes(compAnchor2)) { ok8m = false; out('[!!] client.models.js（X 话题 UI）: 找不到 Web 锚点') } else mt = mt.replace(compAnchor2, fs.readFileSync(path.join(patchDir, 'client-models-xtopics.txt'), 'utf8') + compAnchor2)
 		if (!mt.includes(startAnchor)) { ok8m = false; out('[!!] client.models.js（X 话题 UI）: 找不到 return Group 锚点') } else mt = mt.replace(startAnchor, '\t\t\treturn h(react.Fragment, null, Group({ title: "上网查" },')
-		if (!mt.includes(endAnchor2)) { ok8m = false; out('[!!] client.models.js（X 话题 UI）: 找不到每天最多锚点') } else mt = mt.replace(endAnchor2, endAnchor2.replace(' : null);', ' : null), h(XTopicsPane, { api, notify, ui }));'))
+		if (!endRe2.test(mt)) { ok8m = false; out('[!!] client.models.js（X 话题 UI）: 找不到每天最多锚点') } else mt = mt.replace(endRe2, (m) => m.replace(/ : null\);$/, ' : null), h(XTopicsPane, { api, notify, ui }));'))
 		if (ok8m) { fs.writeFileSync(modelsFile2, mt, 'utf8'); out('[done] client.models.js（X 话题 UI）: 已打补丁') } else failed = true
 	}
 }

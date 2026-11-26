@@ -1,308 +1,254 @@
 [
-    {
-        "id":  "persona-continuity",
-        "title":  "连续对话提示词",
-        "files":  [
-                      "lib/persona.js"
-                  ],
-        "markers":  [
-                        "没说完，就在这一轮里空一行接着写完"
-                    ],
-        "requires":  [
-
-                     ],
-        "conflicts":  [
-
-                      ],
-        "appliesTo":  "\u003e=0.16.0 \u003c0.19.0",
-        "rollback":  "从备份恢复 lib/persona.js"
-    },
-    {
-        "id":  "first-delay",
-        "title":  "首条回复延迟",
-        "files":  [
-                      "lib/gateway.js"
-                  ],
-        "markers":  [
-                        "typingDelayMs(paragraphs[0] ?? \u0027\u0027, this.random)"
-                    ],
-        "requires":  [
-
-                     ],
-        "conflicts":  [
-
-                      ],
-        "appliesTo":  "\u003e=0.16.0 \u003c0.19.0",
-        "rollback":  "从备份恢复 lib/gateway.js"
-    },
-    {
-        "id":  "followup-chain",
-        "title":  "没回音追问 + 二次追问",
-        "files":  [
-                      "lib/gateway.js"
-                  ],
-        "markers":  [
-                        "armSecondFollowUp",
-                        "fireFollowUp"
-                    ],
-        "requires":  [
-
-                     ],
-        "conflicts":  [
-
-                      ],
-        "appliesTo":  "\u003e=0.16.0 \u003c0.19.0",
-        "rollback":  "从备份恢复 lib/gateway.js"
-    },
-    {
-        "id":  "auto-continue",
-        "title":  "自动接话",
-        "files":  [
-                      "lib/gateway.js"
-                  ],
-        "markers":  [
-                        "maybeAutoContinue"
-                    ],
-        "requires":  [
-                         "followup-chain"
-                     ],
-        "conflicts":  [
-
-                      ],
-        "appliesTo":  "\u003e=0.16.0 \u003c0.19.0",
-        "rollback":  "从备份恢复 lib/gateway.js"
-    },
-    {
-        "id":  "reasoning-fallback",
-        "title":  "思考兜底",
-        "files":  [
-                      "lib/gateway.js"
-                  ],
-        "markers":  [
-                        "salvageReasoningOutput"
-                    ],
-        "requires":  [
-
-                     ],
-        "conflicts":  [
-
-                      ],
-        "appliesTo":  "\u003e=0.16.0 \u003c0.19.0",
-        "rollback":  "从备份恢复 lib/gateway.js"
-    },
-    {
-        "id":  "closing-marks",
-        "title":  "收尾标记剥离/识别",
-        "files":  [
-                      "lib/gateway.js"
-                  ],
-        "markers":  [
-                        "stripClosingMarks",
-                        "hasClosingMark"
-                    ],
-        "requires":  [
-
-                     ],
-        "conflicts":  [
-
-                      ],
-        "appliesTo":  "\u003e=0.16.0 \u003c0.19.0",
-        "rollback":  "从备份恢复 lib/gateway.js"
-    },
-    {
-        "id":  "qq-text-rules",
-        "title":  "正文/接着说规则",
-        "files":  [
-                      "lib/index.js"
-                  ],
-        "markers":  [
-                        "[接着说]"
-                    ],
-        "requires":  [
-
-                     ],
-        "conflicts":  [
-
-                      ],
-        "appliesTo":  "\u003e=0.16.0 \u003c0.19.0",
-        "rollback":  "从备份恢复 lib/index.js"
-    },
-    {
-        "id":  "safe-download-fake-ip",
-        "title":  "safeDownload 放行 fake-IP",
-        "files":  [
-                      "lib/safe-download.js"
-                  ],
-        "markers":  [
-                        "(a === 198 \u0026\u0026 b === 51 \u0026\u0026 c === 100)"
-                    ],
-        "requires":  [
-
-                     ],
-        "conflicts":  [
-
-                      ],
-        "appliesTo":  "\u003e=0.16.0 \u003c0.19.0",
-        "rollback":  "从备份恢复 lib/safe-download.js"
-    },
-    {
-        "id":  "x-topics",
-        "title":  "X 话题（X + 权威新闻，预算节流）",
-        "files":  [
-                      "lib/x-topics.js",
-                      "lib/db.js",
-                      "lib/index.js",
-                      "lib/websearch.js"
-                  ],
-        "markers":  [
-                        "class XTopics",
-                        "CREATE TABLE IF NOT EXISTS x_topic",
-                        "new XTopics",
-                        "topic ? { topic }"
-                    ],
-        "requires":  [
-                         "qq-text-rules"
-                     ],
-        "conflicts":  [
-
-                      ],
-        "appliesTo":  "\u003e=0.16.0 \u003c0.19.0",
-        "rollback":  "从备份恢复 lib/db.js、lib/index.js、lib/websearch.js，并删除新增的 lib/x-topics.js"
-    },
-    {
-        "id":  "settings-ui",
-        "title":  "设置页 UI（连续对话 + X 话题）",
-        "files":  [
-                      "lib/client.js",
-                      "lib/client.models.js",
-                      "lib/routes.js",
-                      "lib/config-schema.js"
-                  ],
-        "markers":  [
-                        "ContinuityPane",
-                        "XTopicsPane",
-                        "\u0027/patches\u0027",
-                        "xTopics: z.object"
-                    ],
-        "requires":  [
-                         "x-topics",
-                         "followup-chain"
-                     ],
-        "conflicts":  [
-
-                      ],
-        "appliesTo":  "\u003e=0.16.0 \u003c0.19.0",
-        "rollback":  "从备份恢复 lib/client.js、lib/client.models.js、lib/routes.js、lib/config-schema.js"
-    },
-    {
-        "id":  "internal-markup",
-        "title":  "出站剥离 system-reminder/DSML",
-        "files":  [
-                      "lib/internal-markup.js",
-                      "lib/gateway.js",
-                      "lib/index.js"
-                  ],
-        "markers":  [
-                        "stripInternalMarkup",
-                        "[内部标记]"
-                    ],
-        "requires":  [
-
-                     ],
-        "conflicts":  [
-
-                      ],
-        "appliesTo":  "\u003e=0.16.0 \u003c0.19.0",
-        "rollback":  "恢复 lib/gateway.js、lib/index.js，删除 lib/internal-markup.js"
-    },
-    {
-        "id":  "search-retry",
-        "title":  "fish_search 网络失败自动重试一次",
-        "files":  [
-                      "lib/search-retry.js",
-                      "lib/index.js"
-                  ],
-        "markers":  [
-                        "withSearchRetry"
-                    ],
-        "requires":  [
-
-                     ],
-        "conflicts":  [
-
-                      ],
-        "appliesTo":  "\u003e=0.16.0 \u003c0.19.0",
-        "rollback":  "恢复 lib/index.js，删除 lib/search-retry.js"
-    },
-    {
-        "id":  "search-mode",
-        "title":  "搜索结果链接/沙箱摘要两模式",
-        "files":  [
-                      "lib/search-mode.js",
-                      "lib/config-schema.js",
-                      "lib/websearch.js",
-                      "lib/llm.js",
-                      "lib/routes-v07.js",
-                      "lib/client.models.js",
-                      "lib/index.js"
-                  ],
-        "markers":  [
-                        "formatLinkResults",
-                        "searchMode: z.string()",
-                        "搜索结果模式",
-                        "[\u0027search\u0027, \u0027搜索摘要\u0027]"
-                    ],
-        "requires":  [
-
-                     ],
-        "conflicts":  [
-
-                      ],
-        "appliesTo":  "\u003e=0.18.0 \u003c0.19.0",
-        "rollback":  "恢复上述文件并删除 lib/search-mode.js",
-        "optional":  true
-    },
-    {
-        "id":  "content-risk",
-        "title":  "Content Exists Risk 自动换会话",
-        "files":  [
-                      "lib/content-risk.js",
-                      "lib/gateway.js",
-                      "lib/diag-log.js"
-                  ],
-        "markers":  [
-                        "CONTENT_RISK_SESSION_KEY",
-                        "isContentRiskReason",
-                        "CONTENT_RISK_NOTICE",
-                        "session-content-risk"
-                    ],
-        "requires":  [
-
-                     ],
-        "conflicts":  [
-
-                      ],
-        "appliesTo":  "\u003e=0.18.22 \u003c0.19.0",
-        "optional":  true,
-        "rollback":  "恢复 lib/gateway.js，删除 lib/content-risk.js"
-    },
-    {
-        "id":  "reply-preserve",
-        "title":  "最后一步 [不回] 不覆盖真正回复",
-        "files":  [
-                      "lib/gateway.js"
-                  ],
-        "markers":  [
-                        "const visible = stripInternalMarkup"
-                    ],
-        "requires":  [
-
-                     ],
-        "conflicts":  [
-
-                      ],
-        "appliesTo":  "\u003e=0.18.22 \u003c0.19.0",
-        "optional":  true,
-        "rollback":  "恢复 lib/gateway.js 的原赋值"
-    }
+  {
+    "id": "persona-continuity",
+    "title": "连续对话提示词",
+    "files": [
+      "lib/persona.js"
+    ],
+    "markers": [
+      "没说完，就在这一轮里空一行接着写完"
+    ],
+    "requires": [],
+    "conflicts": [],
+    "appliesTo": ">=0.16.0 <0.20.0",
+    "rollback": "从备份恢复 lib/persona.js"
+  },
+  {
+    "id": "first-delay",
+    "title": "首条回复延迟",
+    "files": [
+      "lib/gateway.js"
+    ],
+    "markers": [
+      "typingDelayMs(paragraphs[0] ?? '', this.random)"
+    ],
+    "requires": [],
+    "conflicts": [],
+    "appliesTo": ">=0.16.0 <0.20.0",
+    "rollback": "从备份恢复 lib/gateway.js"
+  },
+  {
+    "id": "followup-chain",
+    "title": "没回音追问 + 二次追问",
+    "files": [
+      "lib/gateway.js"
+    ],
+    "markers": [
+      "armSecondFollowUp",
+      "fireFollowUp"
+    ],
+    "requires": [],
+    "conflicts": [],
+    "appliesTo": ">=0.16.0 <0.20.0",
+    "rollback": "从备份恢复 lib/gateway.js"
+  },
+  {
+    "id": "auto-continue",
+    "title": "自动接话",
+    "files": [
+      "lib/gateway.js"
+    ],
+    "markers": [
+      "maybeAutoContinue"
+    ],
+    "requires": [
+      "followup-chain"
+    ],
+    "conflicts": [],
+    "appliesTo": ">=0.16.0 <0.20.0",
+    "rollback": "从备份恢复 lib/gateway.js"
+  },
+  {
+    "id": "reasoning-fallback",
+    "title": "思考兜底",
+    "files": [
+      "lib/gateway.js"
+    ],
+    "markers": [
+      "salvageReasoningOutput"
+    ],
+    "requires": [],
+    "conflicts": [],
+    "appliesTo": ">=0.16.0 <0.20.0",
+    "rollback": "从备份恢复 lib/gateway.js"
+  },
+  {
+    "id": "closing-marks",
+    "title": "收尾标记剥离/识别",
+    "files": [
+      "lib/gateway.js"
+    ],
+    "markers": [
+      "stripClosingMarks",
+      "hasClosingMark"
+    ],
+    "requires": [],
+    "conflicts": [],
+    "appliesTo": ">=0.16.0 <0.20.0",
+    "rollback": "从备份恢复 lib/gateway.js"
+  },
+  {
+    "id": "qq-text-rules",
+    "title": "正文/接着说规则",
+    "files": [
+      "lib/index.js"
+    ],
+    "markers": [
+      "[接着说]"
+    ],
+    "requires": [],
+    "conflicts": [],
+    "appliesTo": ">=0.16.0 <0.20.0",
+    "rollback": "从备份恢复 lib/index.js"
+  },
+  {
+    "id": "safe-download-fake-ip",
+    "title": "safeDownload 放行 fake-IP",
+    "files": [
+      "lib/safe-download.js"
+    ],
+    "markers": [
+      "(a === 198 && b === 51 && c === 100)"
+    ],
+    "requires": [],
+    "conflicts": [],
+    "appliesTo": ">=0.16.0 <0.20.0",
+    "rollback": "从备份恢复 lib/safe-download.js"
+  },
+  {
+    "id": "x-topics",
+    "title": "X 话题（X + 权威新闻，预算节流）",
+    "files": [
+      "lib/x-topics.js",
+      "lib/db.js",
+      "lib/index.js",
+      "lib/websearch.js"
+    ],
+    "markers": [
+      "class XTopics",
+      "CREATE TABLE IF NOT EXISTS x_topic",
+      "new XTopics",
+      "topic ? { topic }"
+    ],
+    "requires": [
+      "qq-text-rules"
+    ],
+    "conflicts": [],
+    "appliesTo": ">=0.16.0 <0.20.0",
+    "rollback": "从备份恢复 lib/db.js、lib/index.js、lib/websearch.js，并删除新增的 lib/x-topics.js"
+  },
+  {
+    "id": "settings-ui",
+    "title": "设置页 UI（连续对话 + X 话题）",
+    "files": [
+      "lib/client.js",
+      "lib/client.models.js",
+      "lib/routes.js",
+      "lib/config-schema.js"
+    ],
+    "markers": [
+      "ContinuityPane",
+      "XTopicsPane",
+      "'/patches'",
+      "xTopics: z.object"
+    ],
+    "requires": [
+      "x-topics",
+      "followup-chain"
+    ],
+    "conflicts": [],
+    "appliesTo": ">=0.16.0 <0.20.0",
+    "rollback": "从备份恢复 lib/client.js、lib/client.models.js、lib/routes.js、lib/config-schema.js"
+  },
+  {
+    "id": "internal-markup",
+    "title": "出站剥离 system-reminder/DSML",
+    "files": [
+      "lib/internal-markup.js",
+      "lib/gateway.js",
+      "lib/index.js"
+    ],
+    "markers": [
+      "stripInternalMarkup",
+      "[内部标记]"
+    ],
+    "requires": [],
+    "conflicts": [],
+    "appliesTo": ">=0.16.0 <0.20.0",
+    "rollback": "恢复 lib/gateway.js、lib/index.js，删除 lib/internal-markup.js"
+  },
+  {
+    "id": "search-retry",
+    "title": "fish_search 网络失败自动重试一次",
+    "files": [
+      "lib/search-retry.js",
+      "lib/index.js"
+    ],
+    "markers": [
+      "withSearchRetry"
+    ],
+    "requires": [],
+    "conflicts": [],
+    "appliesTo": ">=0.16.0 <0.20.0",
+    "rollback": "恢复 lib/index.js，删除 lib/search-retry.js"
+  },
+  {
+    "id": "search-mode",
+    "title": "搜索结果链接/沙箱摘要两模式",
+    "files": [
+      "lib/search-mode.js",
+      "lib/config-schema.js",
+      "lib/websearch.js",
+      "lib/llm.js",
+      "lib/routes-v07.js",
+      "lib/client.models.js",
+      "lib/index.js"
+    ],
+    "markers": [
+      "formatLinkResults",
+      "searchMode: z.string()",
+      "搜索结果模式",
+      "['search', '搜索摘要']"
+    ],
+    "requires": [],
+    "conflicts": [],
+    "appliesTo": ">=0.18.0 <0.20.0",
+    "rollback": "恢复上述文件并删除 lib/search-mode.js",
+    "optional": true
+  },
+  {
+    "id": "content-risk",
+    "title": "Content Exists Risk 自动换会话",
+    "files": [
+      "lib/content-risk.js",
+      "lib/gateway.js",
+      "lib/diag-log.js"
+    ],
+    "markers": [
+      "CONTENT_RISK_SESSION_KEY",
+      "isContentRiskReason",
+      "CONTENT_RISK_NOTICE",
+      "session-content-risk"
+    ],
+    "requires": [],
+    "conflicts": [],
+    "appliesTo": ">=0.18.22 <0.20.0",
+    "optional": true,
+    "rollback": "恢复 lib/gateway.js，删除 lib/content-risk.js"
+  },
+  {
+    "id": "reply-preserve",
+    "title": "最后一步 [不回] 不覆盖真正回复",
+    "files": [
+      "lib/gateway.js"
+    ],
+    "markers": [
+      "const visible = stripInternalMarkup"
+    ],
+    "requires": [],
+    "conflicts": [],
+    "appliesTo": ">=0.18.22 <0.20.0",
+    "optional": true,
+    "rollback": "恢复 lib/gateway.js 的原赋值"
+  }
 ]
