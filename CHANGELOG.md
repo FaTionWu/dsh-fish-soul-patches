@@ -1,5 +1,7 @@
 # Unreleased — 2026-11-27
 
+- 0.19.2+ 出站兜底：sendReply 抛错或返回失败时，直接用已生成正文走 QQ 通道发，避免回复静默丢失
+
 - 适配 dsh-fish-soul 0.19.4（锚点与 0.19.2 兼容）；矩阵通过，备份 ID 20261126172159
 
 - 适配 dsh-fish-soul 0.19.2（gateway 拆成 gateway/gateway-session/gateway-dispatch，search 工具拆到 index-tools）；矩阵通过，备份 ID 20261126154602

@@ -312,5 +312,24 @@
         "appliesTo":  "\u003e=0.19.2 \u003c0.20.0",
         "optional":  true,
         "rollback":  "恢复 lib/gateway.js 的原赋值"
+    },
+    {
+        "id":  "send-fallback",
+        "title":  "发送失败时直发兜底",
+        "files":  [
+                      "lib/gateway-dispatch.js"
+                  ],
+        "markers":  [
+                        "send-reply-fallback"
+                    ],
+        "requires":  [
+                         "internal-markup"
+                     ],
+        "conflicts":  [
+
+                      ],
+        "appliesTo":  "\u003e=0.19.2 \u003c0.20.0",
+        "optional":  true,
+        "rollback":  "恢复 lib/gateway-dispatch.js 的 sendReply 调用块"
     }
 ]
