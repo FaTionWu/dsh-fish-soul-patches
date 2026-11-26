@@ -1,4 +1,6 @@
-# Unreleased — 2026-11-26
+# Unreleased — 2026-11-27
+
+- 适配 dsh-fish-soul 0.19.4（锚点与 0.19.2 兼容）；矩阵通过，备份 ID 20261126172159
 
 - 适配 dsh-fish-soul 0.19.2（gateway 拆成 gateway/gateway-session/gateway-dispatch，search 工具拆到 index-tools）；矩阵通过，备份 ID 20261126154602
 - 0.19.2 上游移除了「没回音追问 / 自动接话 / 思考兜底 / 收尾标记」代码路径，对应旧补丁在 0.19.2 上自动跳过，不再报预检失败

@@ -3,7 +3,7 @@
 ![tests](https://github.com/FaTionWu/dsh-fish-soul-patches/actions/workflows/tests.yml/badge.svg)
 
 **Unofficial experience patches for [dsh-fish-soul](https://github.com/Britneycode/dsh-fish-soul) (MIT).**
-**Not affiliated with or endorsed by the upstream author.** Tested against `dsh-fish-soul@0.16.6`, `0.18.2`, `0.18.4`, `0.18.7`, `0.18.9`, `0.18.14`, `0.18.22`, `0.19.2`; anchors may break on newer versions. See [TESTING.md](TESTING.md) and [SECURITY.md](SECURITY.md).
+**Not affiliated with or endorsed by the upstream author.** Tested against `dsh-fish-soul@0.16.6`, `0.18.2`, `0.18.4`, `0.18.7`, `0.18.9`, `0.18.14`, `0.18.22`, `0.19.4`; anchors may break on newer versions. See [TESTING.md](TESTING.md) and [SECURITY.md](SECURITY.md).
 
 [中文说明](#中文说明) · [License](#license--attribution)
 
@@ -41,7 +41,7 @@ A patch kit, not a fork and not a plugin. It applies a set of anchor-based patch
 
 ## Requirements
 
-- DSH Desktop with `dsh-fish-soul@0.19.2` installed (the desktop profile is app-managed; install the
+- DSH Desktop with `dsh-fish-soul@0.19.4` installed (the desktop profile is app-managed; install the
   plugin through the DSH plugin manager/market, **not** `dsh plugin --profile desktop ...`).
 - Node.js ≥ 22.5.
 - Optional: a Tavily API key (free tier, no credit card) for the X topics feature; or Bocha / DSH host
