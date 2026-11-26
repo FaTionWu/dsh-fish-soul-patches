@@ -73,27 +73,50 @@ export function applySearchMode({ lib, patchDir, out }) {
 		uiRow + '\t\t\t\town && cur.needsBaseURL ? Row({ title: "SearXNG 地址" },',
 		'client.models.js（搜索模式开关）', '搜索结果模式')
 
-	// 8) index：导入模块 + fish_search 分支
-	let idx = read(path.join(lib, 'index.js'))
+	// 8) fish_search 所在文件：0.19.2 起拆到 index-tools.js，之前是 index.js
+	const toolsFile = path.join(lib, 'index-tools.js')
+	const searchFile = fs.existsSync(toolsFile) ? toolsFile : path.join(lib, 'index.js')
+	const isTools = searchFile === toolsFile
+	let idx = read(searchFile)
 	if (idx.includes('formatLinkResults')) {
-		out('[ok] index.js（搜索模式）: 已经是补丁后的内容')
+		out('[ok] index-tools.js/index.js（搜索模式）: 已经是补丁后的内容')
 	} else {
 		const imp = "import { withSearchRetry } from './search-retry.js';"
 		const handler = "\t\t\t\treturn formatSearch(q, await withSearchRetry(() => runWebSearch(q, { signal: toolCtx?.signal }), { signal: toolCtx?.signal }));"
+		const modeLine = isTools
+			? "\t\t\t\tconst mode = w.searchMode === 'summary' ? 'summary' : 'links';"
+			: "\t\t\t\tconst mode = currentConfig.tools?.web?.searchMode === 'summary' ? 'summary' : 'links';"
 		const nextHandler = [
-			'\t\t\t\tconst mode = currentConfig.tools?.web?.searchMode === \'summary\' ? \'summary\' : \'links\';',
+			modeLine,
 			'\t\t\t\tconst raw = await withSearchRetry(() => runWebSearch(q, { signal: toolCtx?.signal }), { signal: toolCtx?.signal });',
 			'\t\t\t\tif (mode === \'links\') return formatLinkResults(q, raw);',
 			'\t\t\t\tconst summary = await summarizeSearchResults(q, raw, { callLlm, formatSearch });',
 			'\t\t\t\tif (summary !== \'\') return summary;',
 			'\t\t\t\treturn `摘要没做成（可能触发了平台限制），改成链接：\\n${formatLinkResults(q, raw)}`;'
 		].join('\n')
-		if (!idx.includes(imp) || !idx.includes(handler)) { out('[!!] index.js（搜索模式）: 找不到 import/调用锚点'); ok = false }
+		if (!idx.includes(imp) || !idx.includes(handler)) { out('[!!] 搜索工具文件（搜索模式）: 找不到 import/调用锚点'); ok = false }
 		else {
 			idx = idx.replace(imp, imp + "\nimport { formatLinkResults, summarizeSearchResults } from './search-mode.js';")
 			idx = idx.replace(handler, nextHandler)
-			write(path.join(lib, 'index.js'), idx)
-			out('[done] index.js（搜索模式）: 已打补丁')
+			write(searchFile, idx)
+			out(`[done] ${isTools ? 'index-tools.js' : 'index.js'}（搜索模式）: 已打补丁`)
+		}
+	}
+
+	// 0.19.2 的 fish_search 在 index-tools.js：把 callLlm 从 index.js 传进去
+	if (isTools) {
+		const idxFile = path.join(lib, 'index.js')
+		let it = read(idxFile)
+		const depLine = 'gateway, douyinSocial, getConfig, webConfig, ownSearchReady, runWebSearch, formatSearch,'
+		if (!/^\s*callLlm,\s*$/m.test(it)) {
+			if (it.includes(depLine)) { it = it.replace(depLine, depLine + '\n\t\tcallLlm,'); write(idxFile, it); out('[done] index.js（搜索模式 callLlm）: 已补 deps') }
+			else { out('[!!] index.js（搜索模式 callLlm）: 找不到 registerExtraTools deps'); ok = false }
+		}
+		const tools = read(toolsFile)
+		const toolsDep = 'gateway, douyinSocial, getConfig, webConfig, ownSearchReady, runWebSearch, formatSearch,'
+		if (!/^\s*callLlm,\s*$/m.test(tools)) {
+			if (tools.includes(toolsDep)) { write(toolsFile, tools.replace(toolsDep, toolsDep + '\n\t\tcallLlm,')); out('[done] index-tools.js（搜索模式 callLlm）: 已补 deps') }
+			else { out('[!!] index-tools.js（搜索模式 callLlm）: 找不到 deps'); ok = false }
 		}
 	}
 

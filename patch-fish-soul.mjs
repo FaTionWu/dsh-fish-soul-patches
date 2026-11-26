@@ -332,7 +332,11 @@ function checkSyntax(meta) {
   const files = [...new Set(meta.flatMap((p) => p.files))].filter((f) => f.endsWith('.js'))
   for (const rel of files) {
     const abs = path.join(pluginDir, rel)
-    if (!exists(abs)) { bad(`缺文件：${rel}`); continue }
+    if (!exists(abs)) {
+      if (rel.endsWith('index-tools.js')) warn(`旧版本没有 ${rel}，跳过语法检查`)
+      else bad(`缺文件：${rel}`)
+      continue
+    }
     const r = spawnSync(process.execPath, ['--check', abs], { encoding: 'utf8' })
     if (r.status === 0) good(`语法：${rel}`)
     else bad(`语法错误：${rel}\n${r.stderr ?? ''}`)

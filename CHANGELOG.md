@@ -1,5 +1,8 @@
 # Unreleased — 2026-11-26
 
+- 适配 dsh-fish-soul 0.19.2（gateway 拆成 gateway/gateway-session/gateway-dispatch，search 工具拆到 index-tools）；矩阵通过，备份 ID 20261126154602
+- 0.19.2 上游移除了「没回音追问 / 自动接话 / 思考兜底 / 收尾标记」代码路径，对应旧补丁在 0.19.2 上自动跳过，不再报预检失败
+
 - 适配 dsh-fish-soul 0.19.0（上游已内置 meta.prompt；路由 deps/UI 锚点更新）；矩阵通过，备份 ID 20261126050824
 
 - 新增搜索结果两模式：links（默认，只给标题/链接，省 token）与 summary（临时沙箱摘要，失败自动降级 links）

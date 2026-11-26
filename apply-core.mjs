@@ -64,6 +64,15 @@ patch(
 )
 
 // ── 3) 没回音追问（随机 3~9 分钟 + 二次追问）───────────────────────────
+// 0.19.2 上游移除了没回音追问/自动接话/思考兜底这几条代码路径；旧补丁跳过，避免预检失败
+let legacyVer = ''
+try { legacyVer = String(JSON.parse(fs.readFileSync(path.join(lib, '..', 'package.json'), 'utf8')).version ?? '') } catch { /* 读不到就不跳过 */ }
+const legacyM = /^0\.(\d+)\.(\d+)/.exec(legacyVer)
+const legacyGone = legacyM !== null && (Number(legacyM[1]) > 19 || (Number(legacyM[1]) === 19 && Number(legacyM[2]) >= 2))
+if (legacyGone) {
+	out(`[skip] 没回音追问/自动接话/思考兜底：${legacyVer} 上游已移除这些代码路径，旧补丁跳过`)
+} else {
+
 const gwFile = path.join(lib, 'gateway.js')
 if (!fs.existsSync(gwFile)) {
 	out('[!!] gateway.js: 文件不存在（插件没装？）')
@@ -228,6 +237,8 @@ if (fs.existsSync(gwFile)) {
 		if (ok) { fs.writeFileSync(gwFile, gw, 'utf8'); out('[done] gateway.js（思考兜底）: 已打补丁') }
 		else { out('[!!] gateway.js（思考兜底）: 有锚点没找到，未写入'); failed = true }
 	}
+}
+
 }
 
 // ── 5) QQ 回复规则：正文里必须写出要发的话 ──────────────────────────────
@@ -434,10 +445,12 @@ if (!fs.existsSync(sdFile)) {
         if (!impRe.test(gw2)) { out('[!!] gateway.js（内部标记）: 找不到 gateway-util import'); failed = true }
         else { gw2 = gw2.replace(impRe, (m) => m + "\nimport { stripInternalMarkup } from './internal-markup.js';"); gwChanged = true }
     }
-    if (!gw2.includes('stripInternalMarkup(stripClosingMarks')) {
+    if (!gw2.includes('stripInternalMarkup(parsed.text)') && !gw2.includes('stripInternalMarkup(stripClosingMarks')) {
         const before = gw2
-        gw2 = gw2.replace('raw = stripClosingMarks(closingScan.text);', 'raw = stripInternalMarkup(stripClosingMarks(closingScan.text));')
-        gw2 = gw2.replace('const 净文字 = stripClosingMarks(this.cleanOut(picked.净文字, row));', 'const 净文字 = stripInternalMarkup(stripClosingMarks(this.cleanOut(picked.净文字, row)));')
+        if (gw2.includes('raw = stripClosingMarks(closingScan.text);')) gw2 = gw2.replace('raw = stripClosingMarks(closingScan.text);', 'raw = stripInternalMarkup(stripClosingMarks(closingScan.text));')
+        else if (gw2.includes('const raw = parsed.text;')) gw2 = gw2.replace('const raw = parsed.text;', 'const raw = stripInternalMarkup(parsed.text);')
+        if (gw2.includes('const 净文字 = this.cleanOut(picked.净文字, row);')) gw2 = gw2.replace('const 净文字 = this.cleanOut(picked.净文字, row);', 'const 净文字 = stripInternalMarkup(this.cleanOut(picked.净文字, row));')
+        else if (gw2.includes('const 净文字 = stripClosingMarks(this.cleanOut(picked.净文字, row));')) gw2 = gw2.replace('const 净文字 = stripClosingMarks(this.cleanOut(picked.净文字, row));', 'const 净文字 = stripInternalMarkup(stripClosingMarks(this.cleanOut(picked.净文字, row)));')
         if (gw2 === before) { out('[!!] gateway.js（内部标记）: 找不到 sendReply 锚点'); failed = true }
         else gwChanged = true
     }
@@ -477,24 +490,31 @@ if (!fs.existsSync(sdFile)) {
 		else { fs.writeFileSync(srFile, want, 'utf8'); out('[done] search-retry.js: 已放入') }
 	}
 
-	const idxFile3 = path.join(lib, 'index.js')
+	const toolsFile3 = path.join(lib, 'index-tools.js')
+	const idxFile3 = fs.existsSync(toolsFile3) ? toolsFile3 : path.join(lib, 'index.js')
+	const isTools3 = idxFile3 === toolsFile3
 	let idx3 = fs.readFileSync(idxFile3, 'utf8')
 	let idxChanged = false
 	if (!idx3.includes("from './search-retry.js'")) {
-		const imp = "import { webSearchConfig, ownSearchReady, webSearch, formatSearch } from './websearch.js';"
-		if (!idx3.includes(imp)) { out('[!!] index.js（搜索重试）: 找不到 websearch import'); failed = true }
-		else { idx3 = idx3.replace(imp, imp + "\nimport { withSearchRetry } from './search-retry.js';"); idxChanged = true }
+		if (isTools3) {
+			idx3 = "import { withSearchRetry } from './search-retry.js';\n\n" + idx3
+			idxChanged = true
+		} else {
+			const imp = "import { webSearchConfig, ownSearchReady, webSearch, formatSearch } from './websearch.js';"
+			if (!idx3.includes(imp)) { out('[!!] index.js（搜索重试）: 找不到 websearch import'); failed = true }
+			else { idx3 = idx3.replace(imp, imp + "\nimport { withSearchRetry } from './search-retry.js';"); idxChanged = true }
+		}
 	}
 	if (!idx3.includes('withSearchRetry(() => runWebSearch')) {
 		const a = 'return formatSearch(q, await runWebSearch(q, { signal: toolCtx?.signal }));'
-		if (!idx3.includes(a)) { out('[!!] index.js（搜索重试）: 找不到 fish_search 调用'); failed = true }
+		if (!idx3.includes(a)) { out(`[!!] ${isTools3 ? 'index-tools.js' : 'index.js'}（搜索重试）: 找不到 fish_search 调用`); failed = true }
 		else {
 			idx3 = idx3.replace(a, 'return formatSearch(q, await withSearchRetry(() => runWebSearch(q, { signal: toolCtx?.signal }), { signal: toolCtx?.signal }));')
 			idxChanged = true
 		}
 	}
-	if (idxChanged) { fs.writeFileSync(idxFile3, idx3, 'utf8'); out('[done] index.js（搜索重试）: 已打补丁') }
-	else out('[ok] index.js（搜索重试）: 已经是补丁后的内容')
+	if (idxChanged) { fs.writeFileSync(idxFile3, idx3, 'utf8'); out(`[done] ${isTools3 ? 'index-tools.js' : 'index.js'}（搜索重试）: 已打补丁`) }
+	else out(`[ok] ${isTools3 ? 'index-tools.js' : 'index.js'}（搜索重试）: 已经是补丁后的内容`)
 }
 // ── 11) 搜索结果模式（links / summary 沙箱摘要）+ 设置页开关 ──────────
 {
@@ -513,7 +533,7 @@ if (!fs.existsSync(sdFile)) {
 	let ver = ''
 	try { ver = String(JSON.parse(fs.readFileSync(path.join(lib, '..', 'package.json'), 'utf8')).version ?? '') } catch { /* 读不到就跳过 */ }
 	const mm = /^0\.(\d+)\.(\d+)/.exec(ver)
-	const supported = mm !== null && (Number(mm[1]) > 18 || (Number(mm[1]) === 18 && Number(mm[2]) >= 22))
+	const supported = mm !== null && (Number(mm[1]) > 19 || (Number(mm[1]) === 19 && Number(mm[2]) >= 2))
 	if (supported) {
 		const r = applyContentRisk({ lib, patchDir, out })
 		if (!r.ok) failed = true
@@ -526,7 +546,7 @@ if (!fs.existsSync(sdFile)) {
 	let ver = ''
 	try { ver = String(JSON.parse(fs.readFileSync(path.join(lib, '..', 'package.json'), 'utf8')).version ?? '') } catch { /* 读不到就跳过 */ }
 	const mm = /^0\.(\d+)\.(\d+)/.exec(ver)
-	const supported = mm !== null && (Number(mm[1]) > 18 || (Number(mm[1]) === 18 && Number(mm[2]) >= 22))
+	const supported = mm !== null && (Number(mm[1]) > 19 || (Number(mm[1]) === 19 && Number(mm[2]) >= 2))
 	if (supported) {
 		const r = applyReplyPreserve({ lib, out })
 		if (!r.ok) failed = true
